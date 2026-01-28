@@ -53,7 +53,8 @@ export class Bot {
             version: this.config.version || false,
             hideErrors: false, // Set to false to see why it times out
             connectTimeout: 90000, // 90 seconds
-            checkTimeoutInterval: 90000
+            checkTimeoutInterval: 90000,
+            brand: 'vanilla' // Spoof real client to bypass some Anti-Bots
         };
 
         this.mcBot = mineflayer.createBot(botOptions);
@@ -433,45 +434,51 @@ export class Bot {
         if (typeof reason === 'string') return reason;
 
         try {
-            // Robust recursive function to extract text from ANY Minecraft JSON structure
-            const extractText = (obj) => {
+            const extract = (obj) => {
                 if (obj === null || obj === undefined) return "";
                 if (typeof obj === 'string') return obj;
                 if (typeof obj === 'number') return obj.toString();
-                if (Array.isArray(obj)) return obj.map(extractText).join("");
 
-                let parts = [];
+                let text = "";
 
-                // Handle Mineflayer/NBT 'value' wrapping
+                // Handle Mineflayer/NBT Value
                 if (obj.value !== undefined) {
-                    return extractText(obj.value);
+                    if (Array.isArray(obj.value)) {
+                        text += obj.value.map(extract).join("");
+                    } else {
+                        text += extract(obj.value);
+                    }
                 }
 
-                // Handle standard Chat objects: { text: "...", extra: [...] }
+                // Handle Text field
                 if (obj.text !== undefined && obj.text !== null) {
-                    parts.push(obj.text.toString());
+                    text += obj.text.toString();
                 }
 
+                // Handle Extra array
                 if (obj.extra) {
-                    parts.push(extractText(obj.extra));
+                    if (Array.isArray(obj.extra)) {
+                        text += obj.extra.map(extract).join("");
+                    } else {
+                        text += extract(obj.extra);
+                    }
                 }
 
-                // Handle 'translate' objects
+                // Handle Translate
                 if (obj.translate) {
                     const key = typeof obj.translate === 'string' ? obj.translate : (obj.translate.value || "");
-                    if (key === 'multiplayer.disconnect.banned') return "You are banned from this server.";
-                    if (key === 'multiplayer.disconnect.kicked') return "Kicked by an operator.";
-                    parts.push(key);
+                    if (key === 'multiplayer.disconnect.banned') return "Banned from server.";
+                    if (key === 'multiplayer.disconnect.kicked') return "Kicked by operator.";
+                    text += key;
                 }
 
-                return parts.join("");
+                return text;
             };
 
-            const cleaned = extractText(reason).replace(/\n+/g, " ").trim();
-            // Fallback to stringify only if we literally found NO text
-            return cleaned.length > 0 ? cleaned : JSON.stringify(reason);
+            const result = extract(reason).replace(/\n+/g, " ").trim();
+            return result.length > 0 ? result : JSON.stringify(reason);
         } catch (e) {
-            return "Error parsing reason";
+            return "Error parsing kick reason";
         }
     }
 }
