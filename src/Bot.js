@@ -86,14 +86,16 @@ export class Bot {
         });
 
         this.mcBot.on('kicked', (reason) => {
-            const kickMsg = JSON.stringify(reason).toLowerCase();
-            if (kickMsg.includes('ban') || kickMsg.includes('blacklist')) {
+            const cleanReason = this.cleanKickReason(reason);
+            const lowerReason = cleanReason.toLowerCase();
+
+            if (lowerReason.includes('ban') || lowerReason.includes('blacklist')) {
                 this.isBanned = true;
-                Logger.error(`🚫 BANNED FROM SERVER: ${JSON.stringify(reason)} 🛑`);
-                this.discord.send(`⚠️ **BANNED FROM SERVER!** 🛑\nReason: ${JSON.stringify(reason)}`);
+                Logger.error(`🚫 BANNED FROM SERVER: ${cleanReason} 🛑`);
+                this.discord.send(`⚠️ **BANNED FROM SERVER!** 🛑\nReason: ${cleanReason}`);
             } else {
-                Logger.error(`👢 Kicked: ${JSON.stringify(reason)} ⚠️`);
-                this.discord.send(`👢 **Bot was Kicked!** ⚠️\nReason: ${JSON.stringify(reason)}`);
+                Logger.error(`👢 Kicked: ${cleanReason} ⚠️`);
+                this.discord.send(`👢 **Bot was Kicked!** ⚠️\nReason: ${cleanReason}`);
             }
         });
 
@@ -105,7 +107,16 @@ export class Bot {
 
         this.mcBot.on('error', (err) => {
             if (err.message && err.message.includes('assert.ok(slot >= 0)')) return;
-            Logger.error(`Error: ${err.message}`);
+
+            if (err.code === 'ENOTFOUND') {
+                Logger.error(`❌ Connection failed: The server IP '${this.config.host}' is invalid or incorrect. 🌐`);
+            } else if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+                Logger.error(`🔌 Connection refused: The server is offline or the port '${this.config.port}' is closed. 🔇`);
+            } else if (err.code === 'ECONNRESET') {
+                Logger.error(`📶 Connection lost: The server reset the connection (maybe it's restarting). 🔄`);
+            } else {
+                Logger.error(`⚠️ Bot Error: ${err.message} 🛠️`);
+            }
         });
 
         const processedChats = new Set();
@@ -305,5 +316,27 @@ export class Bot {
 
     stopAFK() {
         if (this.afkInterval) clearInterval(this.afkInterval);
+    }
+
+    // Helper to clean Minecraft JSON kick messages
+    cleanKickReason(reason) {
+        if (!reason) return "Unknown reason";
+        if (typeof reason === 'string') return reason;
+
+        // Handle Mineflayer JSON object structure
+        try {
+            if (reason.value && reason.value.translate) {
+                const key = reason.value.translate.value;
+                if (key === 'multiplayer.disconnect.banned') return "You are banned from this server.";
+                if (key === 'multiplayer.disconnect.kicked') return "Kicked by an operator.";
+                return key;
+            }
+            if (reason.extra) {
+                return reason.extra.map(e => e.text || e).join('');
+            }
+            if (reason.text) return reason.text;
+        } catch (e) { }
+
+        return JSON.stringify(reason);
     }
 }
