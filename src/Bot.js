@@ -63,6 +63,7 @@ export class Bot {
             };
 
             this.mcBot = mineflayer.createBot(botOptions);
+            this.mcBot.setMaxListeners(100); // Prevent MaxListenersExceededWarning
             this.mcBot.loadPlugin(pathfinder);
 
             // Fix: Suppress inventory assertion error specifically
