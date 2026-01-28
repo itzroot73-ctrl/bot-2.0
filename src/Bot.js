@@ -395,16 +395,27 @@ export class Bot {
 
             case 'setreply':
                 const fullStr = args.slice(1).join(' ');
-                if (fullStr.includes(' and ')) {
-                    const [trigger, reply] = fullStr.split(' and ');
+                const splitIndex = fullStr.toLowerCase().indexOf(' and ');
+
+                if (splitIndex !== -1) {
+                    const trigger = fullStr.substring(0, splitIndex).trim();
+                    const reply = fullStr.substring(splitIndex + 5).trim();
+
                     if (!this.config.triggers) this.config.triggers = [];
-                    this.config.triggers.push({ trigger: trigger.trim(), reply: reply.trim() });
+
+                    // Remove old trigger if it exists to avoid duplicates
+                    this.config.triggers = this.config.triggers.filter(t => t.trigger.toLowerCase() !== trigger.toLowerCase());
+
+                    this.config.triggers.push({ trigger, reply });
+
                     import('fs').then(fs => {
                         fs.writeFileSync('./config.json', JSON.stringify(this.config, null, 2));
                     });
-                    Logger.success(`Auto-Reply Added: "${trigger.trim()}" -> "${reply.trim()}"`);
+
+                    Logger.success(`Success! When someone says "${trigger}", I will reply with "${reply}".`);
                 } else {
-                    Logger.error("Usage: !setreply <trigger> and <reply>");
+                    Logger.error("Error! Use this format: !setreply <trigger> and <reply>");
+                    Logger.system("👉 Example: !setreply hello and Hi there! How are you?");
                 }
                 break;
 
@@ -431,7 +442,7 @@ export class Bot {
                     Logger.info("  !goto <player>     - Follow Player");
                     Logger.info("  !stop              - Stop Movement");
                     Logger.info("  !uptime            - Show Bot Uptime");
-                    Logger.info("  !setreply T and R  - Add Auto-Reply");
+                    Logger.info("  !setreply <T> and <R> - Add Auto-Reply");
                     Logger.info("  !replylist         - Show Auto-Replies");
                     Logger.info("  !botinfo           - Show Health/Food");
                     Logger.info("  !setip <ip>        - Change Server IP");
