@@ -108,17 +108,21 @@ export class Bot {
         this.mcBot.on('error', (err) => {
             if (err.message && err.message.includes('assert.ok(slot >= 0)')) return;
 
+            const msg = err.message || "";
             if (err.code === 'ENOTFOUND') {
                 Logger.error("⚠️ Invalid server address 🌐");
                 Logger.system("👉 Use: !setip play.example.com");
             } else if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
-                Logger.error("� Server Offline or Port Closed 🔌");
+                Logger.error("🔇 Server Offline or Port Closed 🔌");
                 Logger.system("👉 Make sure your server is STARTED in Aternos.");
             } else if (err.code === 'ECONNRESET') {
-                Logger.error("� Connection Reset by Server 📶");
+                Logger.error("🔄 Connection Reset by Server 📶");
                 Logger.system("👉 The server might be restarting. Wait and try again.");
+            } else if (msg.includes('Unsupported protocol version') || msg.includes('minecraftVersion')) {
+                Logger.error("📡 Server Version Detection Failed 🤖");
+                Logger.system("👉 Check if the server is ONLINE or if the IP is correct.");
             } else {
-                Logger.error(`⚠️ Bot Error: ${err.message} 🛠️`);
+                Logger.error(`⚠️ Bot Error: ${msg} 🛠️`);
             }
         });
 
