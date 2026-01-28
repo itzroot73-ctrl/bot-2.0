@@ -444,126 +444,117 @@ export class Bot {
                 }
                 break;
 
-            case 'cmd':
-                if (args[1]) {
-                    const rawCmd = args.slice(1).join(' ');
-                    if (this.mcBot) {
-                        this.mcBot.chat(rawCmd.startsWith('/') ? rawCmd : `/${rawCmd}`);
-                        Logger.info(`Sent command to server: ${rawCmd}`);
-                    }
-                } else {
-                    Logger.error("Usage: !cmd <server command>");
-                }
-                break;
+        }
+        break;
 
             case 'replylist':
-                if (!this.config.triggers || this.config.triggers.length === 0) {
-                    Logger.info("No auto-replies set.");
-                } else {
-                    Logger.system("=== Auto-Replies ===");
-                    this.config.triggers.forEach((t, i) => {
-                        Logger.info(`[${i}] "${t.trigger}" -> "${t.reply}"`);
-                    });
-                    Logger.system("====================");
-                }
-                break;
+        if (!this.config.triggers || this.config.triggers.length === 0) {
+            Logger.info("No auto-replies set.");
+        } else {
+            Logger.system("=== Auto-Replies ===");
+            this.config.triggers.forEach((t, i) => {
+                Logger.info(`[${i}] "${t.trigger}" -> "${t.reply}"`);
+            });
+            Logger.system("====================");
+        }
+        break;
 
             case 'help':
             case 'commands':
-                if (source === "Console") {
-                    Logger.system("=== 🤖 AFK BOT COMMANDS ===");
-                    Logger.info("  !afk on/off        - Toggle AFK Mode");
-                    Logger.info("  !jump, !wave       - Perform Actions");
-                    Logger.info("  !spin              - Spin Around");
-                    Logger.info("  !goto X Y Z        - Move to Coords");
-                    Logger.info("  !stop              - Stop Movement");
-                    Logger.info("  !uptime            - Show Bot Uptime");
-                    Logger.info("  !setreply <T> and <R> - Add Auto-Reply/Command");
-                    Logger.info("  !replylist         - Show Auto-Replies");
-                    Logger.info("  !botinfo           - Show Health/Food");
-                    Logger.info("  !setip <ip>        - Change Server IP");
-                    Logger.info("  !iphistory         - Show Used IPs");
-                    Logger.info("  !quit              - Stop Bot");
-                    Logger.system("===============================");
-                } else {
-                    this.mcBot.chat("Available Commands: !afk, !jump, !wave, !spin, !botinfo");
-                }
-                break;
+        if (source === "Console") {
+            Logger.system("=== 🤖 AFK BOT COMMANDS ===");
+            Logger.info("  !afk on/off        - Toggle AFK Mode");
+            Logger.info("  !jump, !wave       - Perform Actions");
+            Logger.info("  !spin              - Spin Around");
+            Logger.info("  !goto X Y Z        - Move to Coords");
+            Logger.info("  !stop              - Stop Movement");
+            Logger.info("  !uptime            - Show Bot Uptime");
+            Logger.info("  !setreply <T> and <R> - Add Auto-Reply/Command");
+            Logger.info("  !replylist         - Show Auto-Replies");
+            Logger.info("  !botinfo           - Show Health/Food");
+            Logger.info("  !setip <ip>        - Change Server IP");
+            Logger.info("  !iphistory         - Show Used IPs");
+            Logger.info("  !quit              - Stop Bot");
+            Logger.system("===============================");
+        } else {
+            this.mcBot.chat("Available Commands: !afk, !jump, !wave, !spin, !botinfo");
+        }
+        break;
 
             case 'quit':
-                process.exit(0);
-                break;
+        process.exit(0);
+        break;
 
             default:
-                if (this.mcBot) this.mcBot.chat(`/${cmdString}`);
-                break;
+        if (this.mcBot) this.mcBot.chat(`/${cmdString}`);
+break;
         }
     }
 
-    startAFK() {
-        if (this.afkInterval) clearInterval(this.afkInterval);
-        if (!this.afkEnabled) return;
+startAFK() {
+    if (this.afkInterval) clearInterval(this.afkInterval);
+    if (!this.afkEnabled) return;
 
-        this.afkInterval = setInterval(() => {
-            if (!this.mcBot || !this.mcBot.entity) return;
-            const action = Math.floor(Math.random() * 3);
-            try {
-                switch (action) {
-                    case 0:
-                        this.mcBot.setControlState('jump', true);
-                        setTimeout(() => this.mcBot.setControlState('jump', false), 500);
-                        break;
-                    case 1:
-                        this.mcBot.swingArm();
-                        break;
-                    case 2:
-                        const yaw = Math.random() * Math.PI - (Math.PI / 2);
-                        this.mcBot.look(yaw, 0);
-                        break;
-                }
-            } catch (e) { }
-        }, 5000);
-    }
-
-    stopAFK() {
-        if (this.afkInterval) clearInterval(this.afkInterval);
-    }
-
-    // Helper to clean Minecraft JSON kick messages
-    cleanKickReason(reason) {
-        if (!reason) return "Unknown reason";
-        if (typeof reason === 'string') return reason;
-
-        let out = "";
-        const traverse = (o) => {
-            if (o === null || o === undefined) return;
-            if (typeof o === 'string') { out += o; return; }
-            if (typeof o === 'number') { out += o.toString(); return; }
-            if (Array.isArray(o)) { o.forEach(traverse); return; }
-
-            // Handle Mineflayer NBT value wrapper
-            if (o.value !== undefined) traverse(o.value);
-
-            // Standard Chat component
-            if (o.text) out += o.text;
-            if (o.extra) traverse(o.extra);
-
-            // Translate keys
-            if (o.translate) {
-                const key = typeof o.translate === 'string' ? o.translate : (o.translate.value || "");
-                if (key === 'multiplayer.disconnect.banned') out += "Banned from server.";
-                else if (key === 'multiplayer.disconnect.kicked') out += "Kicked by operator.";
-                else if (key === 'multiplayer.disconnect.duplicate_login') out += "Duplicate login - Already connected!";
-                else out += key;
-            }
-        };
-
+    this.afkInterval = setInterval(() => {
+        if (!this.mcBot || !this.mcBot.entity) return;
+        const action = Math.floor(Math.random() * 3);
         try {
-            traverse(reason);
-            const cleaned = out.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
-            return cleaned.length > 0 ? cleaned : JSON.stringify(reason);
-        } catch (e) {
-            return JSON.stringify(reason);
+            switch (action) {
+                case 0:
+                    this.mcBot.setControlState('jump', true);
+                    setTimeout(() => this.mcBot.setControlState('jump', false), 500);
+                    break;
+                case 1:
+                    this.mcBot.swingArm();
+                    break;
+                case 2:
+                    const yaw = Math.random() * Math.PI - (Math.PI / 2);
+                    this.mcBot.look(yaw, 0);
+                    break;
+            }
+        } catch (e) { }
+    }, 5000);
+}
+
+stopAFK() {
+    if (this.afkInterval) clearInterval(this.afkInterval);
+}
+
+// Helper to clean Minecraft JSON kick messages
+cleanKickReason(reason) {
+    if (!reason) return "Unknown reason";
+    if (typeof reason === 'string') return reason;
+
+    let out = "";
+    const traverse = (o) => {
+        if (o === null || o === undefined) return;
+        if (typeof o === 'string') { out += o; return; }
+        if (typeof o === 'number') { out += o.toString(); return; }
+        if (Array.isArray(o)) { o.forEach(traverse); return; }
+
+        // Handle Mineflayer NBT value wrapper
+        if (o.value !== undefined) traverse(o.value);
+
+        // Standard Chat component
+        if (o.text) out += o.text;
+        if (o.extra) traverse(o.extra);
+
+        // Translate keys
+        if (o.translate) {
+            const key = typeof o.translate === 'string' ? o.translate : (o.translate.value || "");
+            if (key === 'multiplayer.disconnect.banned') out += "Banned from server.";
+            else if (key === 'multiplayer.disconnect.kicked') out += "Kicked by operator.";
+            else if (key === 'multiplayer.disconnect.duplicate_login') out += "Duplicate login - Already connected!";
+            else out += key;
         }
+    };
+
+    try {
+        traverse(reason);
+        const cleaned = out.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
+        return cleaned.length > 0 ? cleaned : JSON.stringify(reason);
+    } catch (e) {
+        return JSON.stringify(reason);
     }
+}
 }
