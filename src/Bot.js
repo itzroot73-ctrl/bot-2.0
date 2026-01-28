@@ -105,10 +105,10 @@ export class Bot {
         this.mcBot.on('end', () => {
             this.isConnecting = false;
             if (this.isBanned) {
-                Logger.error("⚠ Reconnect cancelled: Bot is BANNED from the server. 🚫");
+                Logger.error("🚫 Reconnect Cancelled: Bot is BANNED from the server.");
                 return;
             }
-            Logger.error('❌ Disconnected. Reconnecting in 10s... 🔄');
+            Logger.error('♻️ Connection Lost. Retrying in 10s... 🔄');
             this.stopAFK();
 
             if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
@@ -121,15 +121,14 @@ export class Bot {
 
             if (lowerReason.includes('ban') || lowerReason.includes('blacklist')) {
                 this.isBanned = true;
-                Logger.error(`🚫 BANNED FROM SERVER: ${cleanReason} 🛑`);
-                this.discord.send(`⚠️ **BANNED FROM SERVER!** 🛑\nReason: ${cleanReason}`);
+                Logger.error(`🚫 ACCESS DENIED: ${cleanReason}`);
+                this.discord.send(`⚠️ **ACCESS DENIED!** 🛑\nReason: ${cleanReason}`);
             } else if (lowerReason.includes('antibot') || lowerReason.includes('verification')) {
-                Logger.error(`🛡️ Kicked by ANTIBOT: ${cleanReason} 🛑`);
-                Logger.system("👉 This server has a bot filter. Try changing your username.");
-                Logger.system("👉 Some servers block bots completely. Try a different server.");
+                Logger.error(`🛡️ ANTIBOT TRIGGERED: ${cleanReason}`);
+                Logger.system("👉 Hint: Change username or wait 10 minutes.");
             } else {
-                Logger.error(`👢 Kicked: ${cleanReason} ⚠️`);
-                this.discord.send(`👢 **Bot was Kicked!** ⚠️\nReason: ${cleanReason}`);
+                Logger.error(`👢 REMOVED BY SERVER: ${cleanReason} ⚠️`);
+                this.discord.send(`👢 **Bot Removed!** ⚠️\nReason: ${cleanReason}`);
             }
         });
 
@@ -498,7 +497,7 @@ export class Bot {
                 const key = typeof o.translate === 'string' ? o.translate : (o.translate.value || "");
                 if (key === 'multiplayer.disconnect.banned') out += "Banned from server.";
                 else if (key === 'multiplayer.disconnect.kicked') out += "Kicked by operator.";
-                else if (key === 'multiplayer.disconnect.duplicate_login') out += "Logged in from another location (Duplicate Login).";
+                else if (key === 'multiplayer.disconnect.duplicate_login') out += "Duplicate login - Already connected!";
                 else out += key;
             }
         };
