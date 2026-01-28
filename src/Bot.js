@@ -3,6 +3,9 @@ import readline from 'readline';
 import Logger from './utils/Logger.js';
 import { DiscordHandler } from './modules/DiscordHandler.js';
 
+import { createRequire } from 'module';
+const nodeRequire = createRequire(import.meta.url);
+
 export class Bot {
     constructor(config) {
         this.config = config;
@@ -15,21 +18,26 @@ export class Bot {
         this.rl = readline.createInterface({
             input: process.stdin,
             output: process.stdout,
-            prompt: '' // Handled by Logger
+            prompt: ''
         });
         Logger.setReadline(this.rl);
+        Logger.info("Bot Module Loaded (Full v2.5 Stable) 🚀");
     }
 
     async init() {
         Logger.showBanner();
-        // Init Discord
         await this.discord.init();
-
         this.connect();
         this.setupConsole();
     }
 
     connect() {
+        if (this.config.host === 'localhost' || this.config.host === '') {
+            Logger.error("No Server IP set! (Defaulting to localhost failed).");
+            Logger.system("👉 Type command: !setip <ip> (Example: !setip play.hypixel.net)");
+            return;
+        }
+
         Logger.info(`Connecting to ${this.config.host}:${this.config.port} as ${this.config.username}...`);
 
         const botOptions = {
@@ -39,38 +47,45 @@ export class Bot {
             auth: this.config.auth,
             version: this.config.version || false,
             hideErrors: true,
-            loadInternalPlugins: false // Fix: Disable inventory plugin to prevent crashes
+            loadInternalPlugins: false
         };
 
         this.mcBot = mineflayer.createBot(botOptions);
 
         // Manually load essential plugins (Excluding buggy inventory)
-        const registry = require('mineflayer').plugins;
-        const safePlugins = [
-            registry.loader,
-            registry.game,
-            registry.kick,
-            registry.chat,
-            registry.time,
-            registry.health,
-            registry.settings,
-            registry.entities,
-            registry.physics,
-            registry.pathfinder
-        ];
+        try {
+            const registry = nodeRequire('mineflayer').plugins;
+            const safePlugins = [
+                registry.loader,
+                registry.game,
+                registry.kick,
+                registry.chat,
+                registry.time,
+                registry.health,
+                registry.settings,
+                registry.entities,
+                registry.physics,
+                registry.pathfinder
+            ];
 
-        safePlugins.forEach(plugin => {
-            if (plugin) this.mcBot.loadPlugin(plugin);
-        });
+            safePlugins.forEach(plugin => {
+                if (plugin) this.mcBot.loadPlugin(plugin);
+            });
+        } catch (e) {
+            Logger.error("Plugin Loading Error: " + e.message);
+        }
 
         this.setupEvents();
     }
 
     setupEvents() {
         this.mcBot.on('login', () => {
-            Logger.success(`Logged in as ${this.mcBot.username}`);
+            const msg = `🎮 Bot successfully joined as [ ${this.mcBot.username} ] ✅`;
+            Logger.success(msg);
+            Logger.system("Systems Online. Waiting for commands... 📡");
+
             this.startAFK();
-            this.discord.send(`✅ **Logged in as ${this.mcBot.username}**`);
+            this.discord.send(`✅ **${this.mcBot.username} Joined the Server!** 🎮`);
         });
 
         this.mcBot.on('spawn', () => {
@@ -88,16 +103,26 @@ export class Bot {
         });
 
         this.mcBot.on('error', (err) => {
-            // Suppress known inventory crash if it happens locally
-            if (err.message.includes('assert.ok(slot >= 0)')) return;
+            if (err.message && err.message.includes('assert.ok(slot >= 0)')) return;
             Logger.error(`Error: ${err.message}`);
+        });
+
+        const processedChats = new Set();
+        setInterval(() => processedChats.clear(), 500);
+
+        this.mcBot.on('chat', (username, message) => {
+            if (username === this.mcBot.username) return;
+            const fullMsg = `<${username}> ${message}`;
+            processedChats.add(fullMsg);
+            processedChats.add(message);
+            Logger.chat(username, message);
         });
 
         this.mcBot.on('messagestr', (message, position) => {
             if (position === 'game_info') return;
+            if (processedChats.has(message)) return;
+            if ([...processedChats].some(pm => message.includes(pm) && pm.length > 5)) return;
             Logger.chat('Server', message);
-
-            // Auto-Replies
             this.checkTriggers(message);
         });
     }
@@ -117,7 +142,6 @@ export class Bot {
                     Logger.error("Bot disconnected.");
                 }
             }
-            // re-prompt handled by Logger
         });
     }
 
@@ -140,21 +164,107 @@ export class Bot {
                 if (args[1] === 'on') {
                     this.afkEnabled = true;
                     this.startAFK();
-                    Logger.info("AFK Mode Enabled ✅");
+                    Logger.success("🤖✅ AFK Mode: ENABLED 🎮⏸️");
                 } else if (args[1] === 'off') {
                     this.afkEnabled = false;
                     this.stopAFK();
-                    Logger.info("AFK Mode Disabled 🛑");
+                    Logger.info("🤖❌ AFK Mode: DISABLED ▶️");
+                } else {
+                    Logger.error("Usage: !afk on/off");
                 }
                 break;
 
-            case 'time': // !time set America/New_York
-                // Implementation left as exercise or kept simple
-                Logger.info("Timezone changing not fully ported yet.");
+            case 'jump':
+                if (this.mcBot) {
+                    this.mcBot.setControlState('jump', true);
+                    this.mcBot.setControlState('jump', false);
+                    Logger.info("Bot Jumped! 🦘");
+                }
+                break;
+
+            case 'wave':
+                if (this.mcBot) {
+                    this.mcBot.swingArm();
+                    Logger.info("Bot Waved! 👋");
+                }
+                break;
+
+            case 'spin':
+                if (this.mcBot) {
+                    const yaw = this.mcBot.entity.yaw + Math.PI;
+                    this.mcBot.look(yaw, 0);
+                    Logger.info("Bot Spun! 🔄");
+                }
+                break;
+
+            case 'botinfo':
+                if (this.mcBot && this.mcBot.entity) {
+                    const health = Math.round(this.mcBot.health);
+                    const food = Math.round(this.mcBot.food);
+                    const msg = `Health: ${health} ❤️ | Food: ${food} 🍗 | Pos: ${this.mcBot.entity.position.toString()}`;
+                    if (source === "Console") Logger.info(msg);
+                    else this.mcBot.chat(msg);
+                }
+                break;
+
+            case 'setip':
+                if (args[1]) {
+                    this.config.host = args[1];
+                    this.config.port = args[2] ? parseInt(args[2]) : 25565;
+                    import('fs').then(fs => {
+                        fs.writeFileSync('./config.json', JSON.stringify(this.config, null, 2));
+                    });
+                    Logger.success(`Server IP Updated to: ${this.config.host}:${this.config.port}`);
+                    Logger.info("Connecting...");
+                    this.connect();
+                } else {
+                    Logger.error("Usage: !setip <ip> [port]");
+                }
+                break;
+
+            case 'setreply':
+                const fullStr = args.slice(1).join(' ');
+                if (fullStr.includes(' and ')) {
+                    const [trigger, reply] = fullStr.split(' and ');
+                    if (!this.config.triggers) this.config.triggers = [];
+                    this.config.triggers.push({ trigger: trigger.trim(), reply: reply.trim() });
+                    import('fs').then(fs => {
+                        fs.writeFileSync('./config.json', JSON.stringify(this.config, null, 2));
+                    });
+                    Logger.success(`Auto-Reply Added: "${trigger.trim()}" -> "${reply.trim()}"`);
+                } else {
+                    Logger.error("Usage: !setreply <trigger> and <reply>");
+                }
+                break;
+
+            case 'replylist':
+                if (!this.config.triggers || this.config.triggers.length === 0) {
+                    Logger.info("No auto-replies set.");
+                } else {
+                    Logger.system("=== Auto-Replies ===");
+                    this.config.triggers.forEach((t, i) => {
+                        Logger.info(`[${i}] "${t.trigger}" -> "${t.reply}"`);
+                    });
+                    Logger.system("====================");
+                }
                 break;
 
             case 'help':
-                Logger.info("Commands: !afk on/off, !setreply, !quit");
+            case 'commands':
+                if (source === "Console") {
+                    Logger.system("=== 🤖 AFK BOT COMMANDS ===");
+                    Logger.info("  !afk on/off        - Toggle AFK Mode");
+                    Logger.info("  !jump, !wave       - Perform Actions");
+                    Logger.info("  !spin              - Spin Around");
+                    Logger.info("  !setreply T and R  - Add Auto-Reply");
+                    Logger.info("  !replylist         - Show Auto-Replies");
+                    Logger.info("  !botinfo           - Show Health/Food");
+                    Logger.info("  !setip <ip>        - Change Server IP");
+                    Logger.info("  !quit              - Stop Bot");
+                    Logger.system("===============================");
+                } else {
+                    this.mcBot.chat("Available Commands: !afk, !jump, !wave, !spin, !botinfo");
+                }
                 break;
 
             case 'quit':
@@ -162,7 +272,7 @@ export class Bot {
                 break;
 
             default:
-                if (this.mcBot) this.mcBot.chat(`/${cmdString}`); // Send as command to server
+                if (this.mcBot) this.mcBot.chat(`/${cmdString}`);
                 break;
         }
     }
@@ -173,7 +283,6 @@ export class Bot {
 
         this.afkInterval = setInterval(() => {
             if (!this.mcBot || !this.mcBot.entity) return;
-
             const action = Math.floor(Math.random() * 3);
             try {
                 switch (action) {
@@ -189,7 +298,7 @@ export class Bot {
                         this.mcBot.look(yaw, 0);
                         break;
                 }
-            } catch (e) { } // Ignore physics errors
+            } catch (e) { }
         }, 5000);
     }
 
