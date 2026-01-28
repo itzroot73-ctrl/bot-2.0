@@ -14,6 +14,7 @@ export class Bot {
         this.afkInterval = null;
         this.afkEnabled = true;
         this.isBanned = false; // Detection for ban status
+        this.startTime = Date.now(); // Track when the bot started
 
         // Setup Readline
         this.rl = readline.createInterface({
@@ -216,6 +217,24 @@ export class Bot {
                 }
                 break;
 
+            case 'uptime':
+                const uptimeMs = Date.now() - this.startTime;
+                const seconds = Math.floor((uptimeMs / 1000) % 60);
+                const minutes = Math.floor((uptimeMs / (1000 * 60)) % 60);
+                const hours = Math.floor((uptimeMs / (1000 * 60 * 60)) % 24);
+                const days = Math.floor(uptimeMs / (1000 * 60 * 60 * 24));
+
+                let uptimeStr = "";
+                if (days > 0) uptimeStr += `${days}d `;
+                if (hours > 0) uptimeStr += `${hours}h `;
+                if (minutes > 0) uptimeStr += `${minutes}m `;
+                uptimeStr += `${seconds}s`;
+
+                const uptimeMsg = `⏳ Bot Uptime: ${uptimeStr} 🚀`;
+                if (source === "Console") Logger.info(uptimeMsg);
+                else this.mcBot.chat(uptimeMsg);
+                break;
+
             case 'botinfo':
                 if (this.mcBot && this.mcBot.entity) {
                     const health = Math.round(this.mcBot.health);
@@ -276,6 +295,7 @@ export class Bot {
                     Logger.info("  !afk on/off        - Toggle AFK Mode");
                     Logger.info("  !jump, !wave       - Perform Actions");
                     Logger.info("  !spin              - Spin Around");
+                    Logger.info("  !uptime            - Show Bot Uptime");
                     Logger.info("  !setreply T and R  - Add Auto-Reply");
                     Logger.info("  !replylist         - Show Auto-Replies");
                     Logger.info("  !botinfo           - Show Health/Food");
