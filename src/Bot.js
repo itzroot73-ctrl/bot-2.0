@@ -173,14 +173,26 @@ export class Bot {
                 Logger.system("👉 Try turning OFF 'Enforce Secure Chat' in server settings.");
                 Logger.system("👉 Or, try setting auth to 'microsoft' in config.json");
             }
+
+            // Check Auto-Replies (Works for Player & System messages)
+            if (this.config.triggers) {
+                const normalizedMsg = msg.replace(/\s+/g, ' ').toLowerCase();
+                this.config.triggers.forEach(t => {
+                    const normalizedTrigger = t.trigger.replace(/\s+/g, ' ').toLowerCase();
+                    if (normalizedMsg.includes(normalizedTrigger)) {
+                        this.mcBot.chat(t.reply);
+                    }
+                });
+            }
+            // Add message to processedChats for messagestr filtering
+            processedChats.add(msg);
         });
 
         this.mcBot.on('chat', (username, message) => {
             if (username === this.mcBot.username) return;
             const fullMsg = `<${username}> ${message}`;
-            processedChats.add(fullMsg);
-            processedChats.add(message);
             Logger.chat(username, message);
+            this.discord.send(`💬 **${username}**: ${message}`);
         });
 
         this.mcBot.on('messagestr', (message, position) => {
@@ -188,7 +200,6 @@ export class Bot {
             if (processedChats.has(message)) return;
             if ([...processedChats].some(pm => message.includes(pm) && pm.length > 5)) return;
             Logger.chat('Server', message);
-            this.checkTriggers(message);
         });
     }
 
@@ -211,13 +222,7 @@ export class Bot {
     }
 
     checkTriggers(message) {
-        if (!this.config.triggers) return;
-        this.config.triggers.forEach(t => {
-            if (message.includes(t.trigger)) {
-                Logger.info(`Trigger matched: "${t.trigger}" -> Reply: "${t.reply}"`);
-                this.mcBot.chat(t.reply);
-            }
-        });
+        // Redundant - checks now handled in 'message' event with normalization
     }
 
     handleCommand(cmdString, source) {
@@ -393,6 +398,7 @@ export class Bot {
                 }
                 break;
 
+            case 'addcmd':
             case 'setreply':
                 const fullStr = args.slice(1).join(' ');
                 const splitIndex = fullStr.toLowerCase().indexOf(' and ');
@@ -412,10 +418,22 @@ export class Bot {
                         fs.writeFileSync('./config.json', JSON.stringify(this.config, null, 2));
                     });
 
-                    Logger.success(`Success! When someone says "${trigger}", I will reply with "${reply}".`);
+                    Logger.success(`Success! When I see "${trigger}", I will run/say "${reply}".`);
                 } else {
-                    Logger.error("Error! Use this format: !setreply <trigger> and <reply>");
-                    Logger.system("👉 Example: !setreply hello and Hi there! How are you?");
+                    Logger.error("Error! Use this format: !addcmd <message> and <command>");
+                    Logger.system("👉 Example: !addcmd teleport to death and /back");
+                }
+                break;
+
+            case 'cmd':
+                if (args[1]) {
+                    const rawCmd = args.slice(1).join(' ');
+                    if (this.mcBot) {
+                        this.mcBot.chat(rawCmd.startsWith('/') ? rawCmd : `/${rawCmd}`);
+                        Logger.info(`Sent command to server: ${rawCmd}`);
+                    }
+                } else {
+                    Logger.error("Usage: !cmd <server command>");
                 }
                 break;
 
@@ -439,10 +457,11 @@ export class Bot {
                     Logger.info("  !jump, !wave       - Perform Actions");
                     Logger.info("  !spin              - Spin Around");
                     Logger.info("  !goto X Y Z        - Move to Coords");
-                    Logger.info("  !goto <player>     - Follow Player");
                     Logger.info("  !stop              - Stop Movement");
                     Logger.info("  !uptime            - Show Bot Uptime");
+                    Logger.info("  !addcmd <T> and <R> - Auto-Run Command");
                     Logger.info("  !setreply <T> and <R> - Add Auto-Reply");
+                    Logger.info("  !cmd <command>     - Send Raw Command");
                     Logger.info("  !replylist         - Show Auto-Replies");
                     Logger.info("  !botinfo           - Show Health/Food");
                     Logger.info("  !setip <ip>        - Change Server IP");
