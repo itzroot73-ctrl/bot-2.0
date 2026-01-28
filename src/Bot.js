@@ -109,11 +109,14 @@ export class Bot {
             if (err.message && err.message.includes('assert.ok(slot >= 0)')) return;
 
             if (err.code === 'ENOTFOUND') {
-                Logger.error(`❌ Connection failed: The server IP '${this.config.host}' is invalid or incorrect. 🌐`);
+                Logger.error("⚠️ Invalid server address 🌐");
+                Logger.system("👉 Use: !setip play.example.com");
             } else if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
-                Logger.error(`🔌 Connection refused: The server is offline or the port '${this.config.port}' is closed. 🔇`);
+                Logger.error("� Server Offline or Port Closed 🔌");
+                Logger.system("👉 Make sure your server is STARTED in Aternos.");
             } else if (err.code === 'ECONNRESET') {
-                Logger.error(`📶 Connection lost: The server reset the connection (maybe it's restarting). 🔄`);
+                Logger.error("� Connection Reset by Server 📶");
+                Logger.system("👉 The server might be restarting. Wait and try again.");
             } else {
                 Logger.error(`⚠️ Bot Error: ${err.message} 🛠️`);
             }
