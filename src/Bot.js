@@ -319,8 +319,19 @@ export class Bot {
             case 'ipset':
             case 'setip':
                 if (args[1]) {
-                    this.config.host = args[1];
-                    this.config.port = args[2] ? parseInt(args[2]) : 25565;
+                    const newHost = args[1];
+                    const newPort = args[2] ? parseInt(args[2]) : 25565;
+                    const fullIp = `${newHost}:${newPort}`;
+
+                    // Update History
+                    if (!this.config.ipHistory) this.config.ipHistory = [];
+                    if (!this.config.ipHistory.includes(fullIp)) {
+                        this.config.ipHistory.unshift(fullIp); // Add to start
+                        if (this.config.ipHistory.length > 10) this.config.ipHistory.pop(); // Keep last 10
+                    }
+
+                    this.config.host = newHost;
+                    this.config.port = newPort;
                     import('fs').then(fs => {
                         fs.writeFileSync('./config.json', JSON.stringify(this.config, null, 2));
                     });
@@ -329,6 +340,19 @@ export class Bot {
                     this.connect();
                 } else {
                     Logger.error("Usage: !setip <ip> [port]");
+                }
+                break;
+
+            case 'iphistory':
+                if (!this.config.ipHistory || this.config.ipHistory.length === 0) {
+                    Logger.info("No IP history found.");
+                } else {
+                    Logger.system("=== 📜 IP HISTORY ===");
+                    this.config.ipHistory.forEach((ip, i) => {
+                        Logger.info(` [${i + 1}] ${ip}`);
+                    });
+                    Logger.system("=====================");
+                    Logger.system("👉 Tip: Use !setip <ip> to switch!");
                 }
                 break;
 
@@ -388,6 +412,7 @@ export class Bot {
                     Logger.info("  !replylist         - Show Auto-Replies");
                     Logger.info("  !botinfo           - Show Health/Food");
                     Logger.info("  !setip <ip>        - Change Server IP");
+                    Logger.info("  !iphistory         - Show Used IPs");
                     Logger.info("  !quit              - Stop Bot");
                     Logger.system("===============================");
                 } else {
