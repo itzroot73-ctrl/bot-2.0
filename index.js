@@ -342,5 +342,15 @@ function stopAFK() {
     if (afkInterval) clearInterval(afkInterval);
 }
 
+// Global Error Handlers to prevent crashes from library bugs
+process.on('uncaughtException', (err) => {
+    log(`Uncaught Exception: ${err.message}`, 'error');
+    // console.error(err); // Optional: print full stack trace
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    log(`Unhandled Rejection: ${reason}`, 'error');
+});
+
 // Start the bot
 createBot();
