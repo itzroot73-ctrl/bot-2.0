@@ -32,13 +32,35 @@ export class Bot {
     connect() {
         Logger.info(`Connecting to ${this.config.host}:${this.config.port} as ${this.config.username}...`);
 
-        this.mcBot = mineflayer.createBot({
+        const botOptions = {
             host: this.config.host,
             port: this.config.port,
             username: this.config.username,
             auth: this.config.auth,
             version: this.config.version || false,
-            hideErrors: true
+            hideErrors: true,
+            loadInternalPlugins: false // Fix: Disable inventory plugin to prevent crashes
+        };
+
+        this.mcBot = mineflayer.createBot(botOptions);
+
+        // Manually load essential plugins (Excluding buggy inventory)
+        const registry = require('mineflayer').plugins;
+        const safePlugins = [
+            registry.loader,
+            registry.game,
+            registry.kick,
+            registry.chat,
+            registry.time,
+            registry.health,
+            registry.settings,
+            registry.entities,
+            registry.physics,
+            registry.pathfinder
+        ];
+
+        safePlugins.forEach(plugin => {
+            if (plugin) this.mcBot.loadPlugin(plugin);
         });
 
         this.setupEvents();
