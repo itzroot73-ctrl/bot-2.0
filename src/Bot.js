@@ -433,53 +433,45 @@ export class Bot {
         if (typeof reason === 'string') return reason;
 
         try {
-            // Recursive function to extract text from Mineflayer's complex NBT JSON
+            // Robust recursive function to extract text from ANY Minecraft JSON structure
             const extractText = (obj) => {
-                if (!obj) return "";
+                if (obj === null || obj === undefined) return "";
                 if (typeof obj === 'string') return obj;
                 if (typeof obj === 'number') return obj.toString();
+                if (Array.isArray(obj)) return obj.map(extractText).join("");
 
-                let results = [];
+                let parts = [];
 
-                // Handle 'value' objects (NBT style)
+                // Handle Mineflayer/NBT 'value' wrapping
                 if (obj.value !== undefined) {
-                    if (Array.isArray(obj.value)) {
-                        return obj.value.map(extractText).join("");
-                    }
-                    if (typeof obj.value === 'object') {
-                        return extractText(obj.value);
-                    }
-                    return obj.value.toString();
+                    return extractText(obj.value);
                 }
 
-                // Handle 'text' fields
-                if (obj.text) results.push(obj.text);
+                // Handle standard Chat objects: { text: "...", extra: [...] }
+                if (obj.text !== undefined && obj.text !== null) {
+                    parts.push(obj.text.toString());
+                }
 
-                // Handle 'extra' arrays
                 if (obj.extra) {
-                    if (Array.isArray(obj.extra)) {
-                        results.push(...obj.extra.map(extractText));
-                    } else if (typeof obj.extra === 'object' && obj.extra.value) {
-                        // Some structures have { extra: { type: 'list', value: [...] } }
-                        results.push(extractText(obj.extra));
-                    }
+                    parts.push(extractText(obj.extra));
                 }
 
                 // Handle 'translate' objects
                 if (obj.translate) {
-                    const key = typeof obj.translate === 'string' ? obj.translate : obj.translate.value;
+                    const key = typeof obj.translate === 'string' ? obj.translate : (obj.translate.value || "");
                     if (key === 'multiplayer.disconnect.banned') return "You are banned from this server.";
                     if (key === 'multiplayer.disconnect.kicked') return "Kicked by an operator.";
-                    results.push(key);
+                    parts.push(key);
                 }
 
-                return results.join("");
+                return parts.join("");
             };
 
-            const cleaned = extractText(reason).trim();
-            return cleaned || JSON.stringify(reason);
+            const cleaned = extractText(reason).replace(/\n+/g, " ").trim();
+            // Fallback to stringify only if we literally found NO text
+            return cleaned.length > 0 ? cleaned : JSON.stringify(reason);
         } catch (e) {
-            return JSON.stringify(reason);
+            return "Error parsing reason";
         }
     }
 }
