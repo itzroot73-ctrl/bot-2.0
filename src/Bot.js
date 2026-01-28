@@ -51,8 +51,8 @@ export class Bot {
             username: this.config.username,
             auth: this.config.auth,
             version: this.config.version || false,
-            connectTimeout: 60000,
-            hideErrors: true
+            hideErrors: true,
+            connectTimeout: 60000 // Increased timeout to 60s
         };
 
         this.mcBot = mineflayer.createBot(botOptions);
@@ -317,6 +317,20 @@ export class Bot {
                     this.connect();
                 } else {
                     Logger.error("Usage: !setip <ip> [port]");
+                }
+                break;
+
+            case 'setversion':
+                if (args[1]) {
+                    this.config.version = args[1] === 'auto' ? false : args[1];
+                    import('fs').then(fs => {
+                        fs.writeFileSync('./config.json', JSON.stringify(this.config, null, 2));
+                    });
+                    Logger.success(`Bot Version Updated to: ${args[1]}`);
+                    Logger.info("Reconnecting with new version...");
+                    this.connect();
+                } else {
+                    Logger.error("Usage: !setversion <version> (e.g. 1.20.1 or auto)");
                 }
                 break;
 
