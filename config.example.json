@@ -1,0 +1,18 @@
+{
+    "host": "localhost",
+    "port": 25565,
+    "username": "AFK_Bot",
+    "auth": "offline",
+    "timezone": "Asia/Colombo",
+    "version": "1.20.1",
+    "triggers": [
+        {
+            "trigger": "hello bot",
+            "reply": "Hello!"
+        }
+    ],
+    "discord": {
+        "token": "PASTE_YOUR_TOKEN_HERE",
+        "channelId": "PASTE_YOUR_CHANNEL_ID_HERE"
+    }
+}

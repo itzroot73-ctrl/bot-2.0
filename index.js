@@ -100,9 +100,31 @@ rl.on('line', (line) => {
     if (input === '') return;
 
     if (input.startsWith('!')) {
-        handleCommand("Console", input, (reply) => {
-            console.log(chalk.yellow(`[Bot]: ${reply}`));
-        });
+        const args = input.slice(1).split(' ');
+        const command = args[0].toLowerCase();
+
+        if (command === 'setip') {
+            const newHost = args[1];
+            const newPort = args[2] ? parseInt(args[2]) : 25565;
+
+            if (newHost) {
+                config.host = newHost;
+                config.port = newPort;
+                fs.writeFileSync('./config.json', JSON.stringify(config, null, 2));
+                console.log(chalk.green(`Server IP set to ${newHost}:${newPort}. Restarting bot...`));
+
+                // Force restart logic
+                if (bot) bot.quit();
+                if (afkInterval) clearInterval(afkInterval);
+                createBot();
+            } else {
+                console.log(chalk.red("Usage: !setip <ip> [port]"));
+            }
+        } else {
+            handleCommand("Console", input, (reply) => {
+                console.log(chalk.yellow(`[Bot]: ${reply}`));
+            });
+        }
     } else {
         bot.chat(input);
     }
@@ -110,12 +132,41 @@ rl.on('line', (line) => {
 
 // Common Command Handler
 function handleCommand(user, message, replyCallback) {
-    if (!bot) {
-        replyCallback("Bot is currently disconnected/reconnecting. ⚠️");
+    // Note: !setip is handled separately in console input because it's a structural change
+    // but we can also allow it from Discord? The user specifically asked for "no ip enter ip... !setip".
+    // Let's allow it in common handler too if needed, but for now console is safest for initial setup.
+    // Actually, user said "!setip kiyala ip ek set krnn puluwn wennth one", likely from console if it doesn't connect.
+
+    if (!bot && message.startsWith("!setip")) {
+        // Allow setip even if bot is null (disconnected state)
+        // But handleCommand logic above has a check for !bot. We need to move that check.
+    }
+
+    if (!bot && !message.startsWith("!setip")) {
+        replyCallback("Bot is currently disconnected/reconnecting. (Use !setip <ip> to configure) ⚠️");
         return;
     }
+
     const args = message.slice(1).split(' ');
     const command = args[0].toLowerCase();
+
+    if (command === 'setip') {
+        const newHost = args[1];
+        const newPort = args[2] ? parseInt(args[2]) : 25565;
+        if (newHost) {
+            config.host = newHost;
+            config.port = newPort;
+            fs.writeFileSync('./config.json', JSON.stringify(config, null, 2));
+            replyCallback(`Server IP updated to ${newHost}:${newPort}. Restarting... 🔄`);
+
+            if (bot) bot.quit();
+            if (afkInterval) clearInterval(afkInterval);
+            setTimeout(createBot, 1000);
+        } else {
+            replyCallback("Usage: !setip <ip> [port] ❓");
+        }
+        return;
+    }
 
     if (command === 'afk') {
         if (args[1] === 'on') {
@@ -187,12 +238,19 @@ function handleCommand(user, message, replyCallback) {
 }
 
 function createBot() {
+    if (config.host === 'localhost' || config.host === '') {
+        log("No Server IP set! Please use command: !setip <ip>", 'error');
+        console.log(chalk.yellow("Example: !setip play.hypixel.net"));
+        return; // Do not attempt to connect, wait for user input
+    }
+
     const botOptions = {
         host: config.host,
         port: config.port,
         username: username,
         auth: config.auth,
-        version: config.version === false ? undefined : config.version
+        version: config.version === false ? undefined : config.version,
+        hideErrors: true // Supress some low-level logging
     };
 
     bot = mineflayer.createBot(botOptions);
