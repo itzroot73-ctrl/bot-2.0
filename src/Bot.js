@@ -180,7 +180,19 @@ export class Bot {
                 this.config.triggers.forEach(t => {
                     const normalizedTrigger = t.trigger.replace(/\s+/g, ' ').toLowerCase();
                     if (normalizedMsg.includes(normalizedTrigger)) {
-                        this.mcBot.chat(t.reply);
+                        // Support multiple commands separated by &&
+                        const replies = t.reply.split('&&');
+                        replies.forEach((r, index) => {
+                            setTimeout(() => {
+                                if (this.mcBot) {
+                                    const finalReply = r.trim();
+                                    this.mcBot.chat(finalReply);
+                                    if (finalReply.startsWith('/')) {
+                                        Logger.info(`自动化 - Running Command: ${finalReply} ⚙️`);
+                                    }
+                                }
+                            }, index * 500); // 500ms delay between commands to avoid spam kick
+                        });
                     }
                 });
             }
@@ -210,6 +222,13 @@ export class Bot {
 
             if (raw.startsWith('!')) {
                 this.handleCommand(raw.slice(1), "Console");
+            } else if (raw.startsWith('/')) {
+                if (this.mcBot) {
+                    this.mcBot.chat(raw);
+                    Logger.info(`Sent Server Command: ${raw} 📡`);
+                } else {
+                    Logger.error("Bot disconnected.");
+                }
             } else {
                 if (this.mcBot) {
                     this.mcBot.chat(raw);
@@ -398,7 +417,6 @@ export class Bot {
                 }
                 break;
 
-            case 'addcmd':
             case 'setreply':
                 const fullStr = args.slice(1).join(' ');
                 const splitIndex = fullStr.toLowerCase().indexOf(' and ');
@@ -418,10 +436,11 @@ export class Bot {
                         fs.writeFileSync('./config.json', JSON.stringify(this.config, null, 2));
                     });
 
-                    Logger.success(`Success! When I see "${trigger}", I will run/say "${reply}".`);
+                    const type = reply.startsWith('/') ? "Command" : "Reply";
+                    Logger.success(`Success! Saved ${type} for: "${trigger}"`);
                 } else {
-                    Logger.error("Error! Use this format: !addcmd <message> and <command>");
-                    Logger.system("👉 Example: !addcmd teleport to death and /back");
+                    Logger.error("Format Error! Use: !setreply <trigger> and <reply/command>");
+                    Logger.system("👉 Example: !setreply hello and /back");
                 }
                 break;
 
@@ -459,9 +478,7 @@ export class Bot {
                     Logger.info("  !goto X Y Z        - Move to Coords");
                     Logger.info("  !stop              - Stop Movement");
                     Logger.info("  !uptime            - Show Bot Uptime");
-                    Logger.info("  !addcmd <T> and <R> - Auto-Run Command");
-                    Logger.info("  !setreply <T> and <R> - Add Auto-Reply");
-                    Logger.info("  !cmd <command>     - Send Raw Command");
+                    Logger.info("  !setreply <T> and <R> - Add Auto-Reply/Command");
                     Logger.info("  !replylist         - Show Auto-Replies");
                     Logger.info("  !botinfo           - Show Health/Food");
                     Logger.info("  !setip <ip>        - Change Server IP");
