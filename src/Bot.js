@@ -13,6 +13,7 @@ export class Bot {
         this.discord = new DiscordHandler(config, this);
         this.afkInterval = null;
         this.afkEnabled = true;
+        this.isBanned = false; // Detection for ban status
 
         // Setup Readline
         this.rl = readline.createInterface({
@@ -32,6 +33,7 @@ export class Bot {
     }
 
     connect() {
+        this.isBanned = false; // Reset status on connect
         if (this.config.host === 'localhost' || this.config.host === '') {
             Logger.error("No Server IP set! (Defaulting to localhost failed).");
             Logger.system("👉 Type command: !setip <ip> (Example: !setip play.hypixel.net)");
@@ -74,13 +76,31 @@ export class Bot {
         });
 
         this.mcBot.on('end', () => {
-            Logger.error('Disconnected. Reconnecting in 10s...');
+            if (this.isBanned) {
+                Logger.error("⚠ Reconnect cancelled: Bot is BANNED from the server. 🚫");
+                return;
+            }
+            Logger.error('❌ Disconnected. Reconnecting in 10s... 🔄');
             this.stopAFK();
             setTimeout(() => this.connect(), 10000);
         });
 
         this.mcBot.on('kicked', (reason) => {
-            Logger.error(`Kicked: ${JSON.stringify(reason)}`);
+            const kickMsg = JSON.stringify(reason).toLowerCase();
+            if (kickMsg.includes('ban') || kickMsg.includes('blacklist')) {
+                this.isBanned = true;
+                Logger.error(`🚫 BANNED FROM SERVER: ${JSON.stringify(reason)} 🛑`);
+                this.discord.send(`⚠️ **BANNED FROM SERVER!** 🛑\nReason: ${JSON.stringify(reason)}`);
+            } else {
+                Logger.error(`👢 Kicked: ${JSON.stringify(reason)} ⚠️`);
+                this.discord.send(`👢 **Bot was Kicked!** ⚠️\nReason: ${JSON.stringify(reason)}`);
+            }
+        });
+
+        this.mcBot.on('death', () => {
+            Logger.error("💀 Bot DIED! Respawning... ⚰️");
+            this.discord.send("💀 **Bot Died in Minecraft!** ⚰️ (Auto-Respawning...)");
+            this.mcBot.respawn();
         });
 
         this.mcBot.on('error', (err) => {
