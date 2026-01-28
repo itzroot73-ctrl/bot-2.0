@@ -20,11 +20,15 @@ class Logger {
 
     // Print preventing input line overwrites
     print(text) {
-        if (this.rl) {
-            readline.clearLine(process.stdout, 0);
-            readline.cursorTo(process.stdout, 0);
-            console.log(text);
-            this.rl.prompt(true);
+        if (this.rl && !this.rl.closed) {
+            try {
+                readline.clearLine(process.stdout, 0);
+                readline.cursorTo(process.stdout, 0);
+                console.log(text);
+                this.rl.prompt(true);
+            } catch (e) {
+                console.log(text);
+            }
         } else {
             console.log(text);
         }
