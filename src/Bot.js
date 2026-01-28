@@ -124,10 +124,10 @@ export class Bot {
                 Logger.error(`🚫 ACCESS DENIED: ${cleanReason}`);
                 this.discord.send(`⚠️ **ACCESS DENIED!** 🛑\nReason: ${cleanReason}`);
             } else if (lowerReason.includes('antibot') || lowerReason.includes('verification')) {
-                Logger.error(`🛡️ ANTIBOT TRIGGERED: ${cleanReason}`);
+                Logger.error(`🛡️ SECURITY: Access Denied (Anti-Bot)`);
                 Logger.system("👉 Hint: Change username or wait 10 minutes.");
             } else {
-                Logger.error(`👢 REMOVED BY SERVER: ${cleanReason} ⚠️`);
+                Logger.error(`🚪 DISCONNECTED: Bot was removed from server ✨`);
                 this.discord.send(`👢 **Bot Removed!** ⚠️\nReason: ${cleanReason}`);
             }
         });
