@@ -45,13 +45,14 @@ class Logger {
   ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝
 
    🤖 Blaze Bot - AFK & Chat Bot
+   🚀 Online | Stable | Professional
         `));
         console.log(primaryColor('=================================================='));
         console.log('');
     }
 
     log(message, type = 'INFO') {
-        const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+        const timestamp = new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Colombo', hour12: false });
         const prefix = `[${timestamp}] [${type}]`;
 
         let coloredPrefix;
@@ -70,7 +71,10 @@ class Logger {
     info(msg) { this.log(msg, 'INFO'); }
     error(msg) { this.log(msg, 'ERROR'); }
     success(msg) { this.log(msg, 'SUCCESS'); }
-    chat(sender, msg) { this.print(`${primaryColor(`[${new Date().toLocaleTimeString('en-US', { hour12: false })}] [CHAT] <${sender}>`)} ${msg}`); }
+    chat(sender, msg) {
+        const timestamp = new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Colombo', hour12: false });
+        this.print(`${primaryColor(`[${timestamp}] [CHAT] <${sender}>`)} ${msg}`);
+    }
     discord(user, msg) { this.print(`${discordColor(`[DISCORD] <${user}>`)} ${msg}`); }
     system(msg) { this.print(`${primaryColor('[🤖]')} ${msg}`); }
 }
