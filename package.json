@@ -1,17 +1,19 @@
 {
-    "name": "minecraft-afk-bot",
-    "version": "1.0.0",
-    "description": "A simple Minecraft AFK bot with anti-AFK features.",
+    "name": "minecraft-afk-bot-pro",
+    "version": "2.0.0",
+    "description": "Professional Minecraft AFK Bot with Discord Integration",
     "main": "index.js",
+    "type": "module",
     "scripts": {
         "start": "node index.js"
     },
     "dependencies": {
         "mineflayer": "latest",
         "minecraft-protocol": "latest",
-        "prompt-sync": "^4.2.0",
-        "chalk": "^4.1.2",
+        "discord.js": "^14.14.1",
+        "chalk": "^5.3.0",
+        "figlet": "^1.7.0",
         "moment-timezone": "^0.5.43",
-        "discord.js": "^14.14.1"
+        "prompt-sync": "^4.2.0"
     }
 }
