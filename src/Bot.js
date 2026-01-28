@@ -5,6 +5,8 @@ import { DiscordHandler } from './modules/DiscordHandler.js';
 
 import { createRequire } from 'module';
 const nodeRequire = createRequire(import.meta.url);
+const { pathfinder, Movements, goals } = nodeRequire('mineflayer-pathfinder');
+const { GoalNear, GoalFollow } = goals;
 
 export class Bot {
     constructor(config) {
@@ -23,7 +25,7 @@ export class Bot {
             prompt: ''
         });
         Logger.setReadline(this.rl);
-        Logger.info("Bot Module Loaded (Full v2.5 Stable) 🚀");
+        Logger.info("Blaze Bot Module Loaded (Full v2.5 Stable) 🚀");
     }
 
     async init() {
@@ -53,6 +55,7 @@ export class Bot {
         };
 
         this.mcBot = mineflayer.createBot(botOptions);
+        this.mcBot.loadPlugin(pathfinder);
 
         // Fix: Suppress inventory assertion error specifically
         this.mcBot.on('error', (err) => {
@@ -74,6 +77,8 @@ export class Bot {
 
         this.mcBot.on('spawn', () => {
             Logger.info("Bot Spawned! 🌍");
+            const defaultMove = new Movements(this.mcBot);
+            this.mcBot.pathfinder.setMovements(defaultMove);
         });
 
         this.mcBot.on('end', () => {
@@ -217,6 +222,55 @@ export class Bot {
                 }
                 break;
 
+            case 'goto':
+                if (!this.mcBot) return;
+                this.stopAFK(); // Stop AFK movement during pathfinding
+
+                if (args.length === 4) {
+                    // !goto X Y Z
+                    const x = parseFloat(args[1]);
+                    const y = parseFloat(args[2]);
+                    const z = parseFloat(args[3]);
+                    const goal = new GoalNear(x, y, z, 1);
+                    this.mcBot.pathfinder.setGoal(goal);
+                    Logger.info(`Navigating to [${x}, ${y}, ${z}]... 📍`);
+                } else if (args.length === 2) {
+                    // !goto <player>
+                    const targetName = args[1];
+                    const target = this.mcBot.players[targetName]?.entity;
+                    if (target) {
+                        const goal = new GoalFollow(target, 2);
+                        this.mcBot.pathfinder.setGoal(goal);
+                        Logger.info(`Following ${targetName}... 🏃‍♂️`);
+                    } else {
+                        Logger.error(`Player ${targetName} not found!`);
+                    }
+                } else {
+                    Logger.error("Usage: !goto <x> <y> <z> OR !goto <player>");
+                }
+                break;
+
+            case 'pathfind':
+            case 'pathfiend':
+                if (args[1] === 'off') {
+                    if (this.mcBot) {
+                        this.mcBot.pathfinder.setGoal(null);
+                        Logger.info("Pathfinding: DISABLED 🛑");
+                    }
+                } else if (args[1] === 'on') {
+                    Logger.info("Pathfinding: READY 📡 (Use !goto to move)");
+                } else {
+                    Logger.error("Usage: !pathfind on/off");
+                }
+                break;
+
+            case 'stop':
+                if (this.mcBot) {
+                    this.mcBot.pathfinder.setGoal(null);
+                    Logger.info("Pathfinding stopped! 🛑");
+                }
+                break;
+
             case 'uptime':
                 const uptimeMs = Date.now() - this.startTime;
                 const seconds = Math.floor((uptimeMs / 1000) % 60);
@@ -295,6 +349,9 @@ export class Bot {
                     Logger.info("  !afk on/off        - Toggle AFK Mode");
                     Logger.info("  !jump, !wave       - Perform Actions");
                     Logger.info("  !spin              - Spin Around");
+                    Logger.info("  !goto X Y Z        - Move to Coords");
+                    Logger.info("  !goto <player>     - Follow Player");
+                    Logger.info("  !stop              - Stop Movement");
                     Logger.info("  !uptime            - Show Bot Uptime");
                     Logger.info("  !setreply T and R  - Add Auto-Reply");
                     Logger.info("  !replylist         - Show Auto-Replies");
