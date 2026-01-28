@@ -56,7 +56,7 @@ export class Bot {
                 username: this.config.username,
                 auth: this.config.auth || 'offline',
                 version: this.config.version || "1.20.1",
-                hideErrors: false, // Set to false to see why it times out
+                hideErrors: true, // Hide technical stack traces
                 connectTimeout: 90000, // 90 seconds
                 checkTimeoutInterval: 90000,
                 brand: 'vanilla' // Spoof real client to bypass some Anti-Bots
