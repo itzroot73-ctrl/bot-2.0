@@ -36,9 +36,16 @@ class Logger {
 
     showBanner() {
         console.clear();
-        console.log(primaryColor(figlet.textSync('AFK BOT 2.0', { horizontalLayout: 'fitted' })));
-        console.log(primaryColor('=================================================='));
-        console.log(primaryColor('  🚀 Professional AFK & Chat Bot'));
+        console.log(primaryColor(`
+  █████╗ ███████╗██╗  ██╗
+  ██╔══██╗██╔════╝██║ ██╔╝
+  ███████║█████╗  █████╔╝ 
+  ██╔══██║██╔══╝  ██╔═██╗ 
+  ██║  ██║██║     ██║  ██║
+  ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝
+
+   🤖 Blaze Bot - AFK & Chat Bot
+        `));
         console.log(primaryColor('=================================================='));
         console.log('');
     }
