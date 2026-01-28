@@ -176,11 +176,11 @@ export class Bot {
                 if (args[1] === 'on') {
                     this.afkEnabled = true;
                     this.startAFK();
-                    Logger.success("🤖✅ AFK Mode: ENABLED 🎮⏸️");
+                    Logger.success("✅ AFK Mode: Enabled");
                 } else if (args[1] === 'off') {
                     this.afkEnabled = false;
                     this.stopAFK();
-                    Logger.info("🤖❌ AFK Mode: DISABLED ▶️");
+                    Logger.info("❌ AFK Mode: Disabled");
                 } else {
                     Logger.error("Usage: !afk on/off");
                 }
