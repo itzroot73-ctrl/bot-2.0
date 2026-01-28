@@ -101,6 +101,10 @@ export class Bot {
                 this.isBanned = true;
                 Logger.error(`🚫 BANNED FROM SERVER: ${cleanReason} 🛑`);
                 this.discord.send(`⚠️ **BANNED FROM SERVER!** 🛑\nReason: ${cleanReason}`);
+            } else if (lowerReason.includes('antibot') || lowerReason.includes('verification')) {
+                Logger.error(`🛡️ Kicked by ANTIBOT: ${cleanReason} 🛑`);
+                Logger.system("👉 This server has a bot filter. Try changing your username.");
+                Logger.system("👉 Some servers block bots completely. Try a different server.");
             } else {
                 Logger.error(`👢 Kicked: ${cleanReason} ⚠️`);
                 this.discord.send(`👢 **Bot was Kicked!** ⚠️\nReason: ${cleanReason}`);
@@ -428,20 +432,54 @@ export class Bot {
         if (!reason) return "Unknown reason";
         if (typeof reason === 'string') return reason;
 
-        // Handle Mineflayer JSON object structure
         try {
-            if (reason.value && reason.value.translate) {
-                const key = reason.value.translate.value;
-                if (key === 'multiplayer.disconnect.banned') return "You are banned from this server.";
-                if (key === 'multiplayer.disconnect.kicked') return "Kicked by an operator.";
-                return key;
-            }
-            if (reason.extra) {
-                return reason.extra.map(e => e.text || e).join('');
-            }
-            if (reason.text) return reason.text;
-        } catch (e) { }
+            // Recursive function to extract text from Mineflayer's complex NBT JSON
+            const extractText = (obj) => {
+                if (!obj) return "";
+                if (typeof obj === 'string') return obj;
+                if (typeof obj === 'number') return obj.toString();
 
-        return JSON.stringify(reason);
+                let results = [];
+
+                // Handle 'value' objects (NBT style)
+                if (obj.value !== undefined) {
+                    if (Array.isArray(obj.value)) {
+                        return obj.value.map(extractText).join("");
+                    }
+                    if (typeof obj.value === 'object') {
+                        return extractText(obj.value);
+                    }
+                    return obj.value.toString();
+                }
+
+                // Handle 'text' fields
+                if (obj.text) results.push(obj.text);
+
+                // Handle 'extra' arrays
+                if (obj.extra) {
+                    if (Array.isArray(obj.extra)) {
+                        results.push(...obj.extra.map(extractText));
+                    } else if (typeof obj.extra === 'object' && obj.extra.value) {
+                        // Some structures have { extra: { type: 'list', value: [...] } }
+                        results.push(extractText(obj.extra));
+                    }
+                }
+
+                // Handle 'translate' objects
+                if (obj.translate) {
+                    const key = typeof obj.translate === 'string' ? obj.translate : obj.translate.value;
+                    if (key === 'multiplayer.disconnect.banned') return "You are banned from this server.";
+                    if (key === 'multiplayer.disconnect.kicked') return "Kicked by an operator.";
+                    results.push(key);
+                }
+
+                return results.join("");
+            };
+
+            const cleaned = extractText(reason).trim();
+            return cleaned || JSON.stringify(reason);
+        } catch (e) {
+            return JSON.stringify(reason);
+        }
     }
 }
