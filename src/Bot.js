@@ -49,10 +49,11 @@ export class Bot {
             host: this.config.host,
             port: this.config.port,
             username: this.config.username,
-            auth: this.config.auth,
+            auth: this.config.auth || 'offline',
             version: this.config.version || false,
-            hideErrors: true,
-            connectTimeout: 60000 // Increased timeout to 60s
+            hideErrors: false, // Set to false to see why it times out
+            connectTimeout: 90000, // 90 seconds
+            checkTimeoutInterval: 90000
         };
 
         this.mcBot = mineflayer.createBot(botOptions);
