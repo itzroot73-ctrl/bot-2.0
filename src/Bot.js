@@ -43,29 +43,35 @@ export class Bot {
             return;
         }
 
-        Logger.info(`Connecting to ${this.config.host}:${this.config.port} as ${this.config.username}...`);
+        // Anti-Bot: Random delay before connecting (2-5 seconds)
+        const delay = Math.floor(Math.random() * 3000) + 2000;
+        Logger.info(`Preparing connection... (Stealth Delay: ${delay}ms) ⏳`);
 
-        const botOptions = {
-            host: this.config.host,
-            port: this.config.port,
-            username: this.config.username,
-            auth: this.config.auth || 'offline',
-            version: this.config.version || false,
-            hideErrors: false, // Set to false to see why it times out
-            connectTimeout: 90000, // 90 seconds
-            checkTimeoutInterval: 90000,
-            brand: 'vanilla' // Spoof real client to bypass some Anti-Bots
-        };
+        setTimeout(() => {
+            Logger.info(`Connecting to ${this.config.host}:${this.config.port} as ${this.config.username}...`);
 
-        this.mcBot = mineflayer.createBot(botOptions);
-        this.mcBot.loadPlugin(pathfinder);
+            const botOptions = {
+                host: this.config.host,
+                port: this.config.port,
+                username: this.config.username,
+                auth: this.config.auth || 'offline',
+                version: this.config.version || "1.20.1",
+                hideErrors: false, // Set to false to see why it times out
+                connectTimeout: 90000, // 90 seconds
+                checkTimeoutInterval: 90000,
+                brand: 'vanilla' // Spoof real client to bypass some Anti-Bots
+            };
 
-        // Fix: Suppress inventory assertion error specifically
-        this.mcBot.on('error', (err) => {
-            if (err.message && err.message.includes('assert.ok(slot >= 0)')) return;
-        });
+            this.mcBot = mineflayer.createBot(botOptions);
+            this.mcBot.loadPlugin(pathfinder);
 
-        this.setupEvents();
+            // Fix: Suppress inventory assertion error specifically
+            this.mcBot.on('error', (err) => {
+                if (err.message && err.message.includes('assert.ok(slot >= 0)')) return;
+            });
+
+            this.setupEvents();
+        }, delay);
     }
 
     setupEvents() {
@@ -433,52 +439,35 @@ export class Bot {
         if (!reason) return "Unknown reason";
         if (typeof reason === 'string') return reason;
 
+        let out = "";
+        const traverse = (o) => {
+            if (o === null || o === undefined) return;
+            if (typeof o === 'string') { out += o; return; }
+            if (typeof o === 'number') { out += o.toString(); return; }
+            if (Array.isArray(o)) { o.forEach(traverse); return; }
+
+            // Handle Mineflayer NBT value wrapper
+            if (o.value !== undefined) traverse(o.value);
+
+            // Standard Chat component
+            if (o.text) out += o.text;
+            if (o.extra) traverse(o.extra);
+
+            // Translate keys
+            if (o.translate) {
+                const key = typeof o.translate === 'string' ? o.translate : (o.translate.value || "");
+                if (key === 'multiplayer.disconnect.banned') out += "Banned from server.";
+                else if (key === 'multiplayer.disconnect.kicked') out += "Kicked by operator.";
+                else out += key;
+            }
+        };
+
         try {
-            const extract = (obj) => {
-                if (obj === null || obj === undefined) return "";
-                if (typeof obj === 'string') return obj;
-                if (typeof obj === 'number') return obj.toString();
-
-                let text = "";
-
-                // Handle Mineflayer/NBT Value
-                if (obj.value !== undefined) {
-                    if (Array.isArray(obj.value)) {
-                        text += obj.value.map(extract).join("");
-                    } else {
-                        text += extract(obj.value);
-                    }
-                }
-
-                // Handle Text field
-                if (obj.text !== undefined && obj.text !== null) {
-                    text += obj.text.toString();
-                }
-
-                // Handle Extra array
-                if (obj.extra) {
-                    if (Array.isArray(obj.extra)) {
-                        text += obj.extra.map(extract).join("");
-                    } else {
-                        text += extract(obj.extra);
-                    }
-                }
-
-                // Handle Translate
-                if (obj.translate) {
-                    const key = typeof obj.translate === 'string' ? obj.translate : (obj.translate.value || "");
-                    if (key === 'multiplayer.disconnect.banned') return "Banned from server.";
-                    if (key === 'multiplayer.disconnect.kicked') return "Kicked by operator.";
-                    text += key;
-                }
-
-                return text;
-            };
-
-            const result = extract(reason).replace(/\n+/g, " ").trim();
-            return result.length > 0 ? result : JSON.stringify(reason);
+            traverse(reason);
+            const cleaned = out.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
+            return cleaned.length > 0 ? cleaned : JSON.stringify(reason);
         } catch (e) {
-            return "Error parsing kick reason";
+            return JSON.stringify(reason);
         }
     }
 }
