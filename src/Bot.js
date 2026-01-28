@@ -12,10 +12,12 @@ export class Bot {
     constructor(config) {
         this.config = config;
         this.mcBot = null;
-        this.discord = new DiscordHandler(config, this);
+        this.discord = new DiscordHandler(config);
         this.afkInterval = null;
-        this.afkEnabled = true;
+        this.afkEnabled = false;
         this.isBanned = false; // Detection for ban status
+        this.isConnecting = false;
+        this.reconnectTimeout = null;
         this.startTime = Date.now(); // Track when the bot started
 
         // Setup Readline
@@ -37,11 +39,19 @@ export class Bot {
 
     connect() {
         this.isBanned = false; // Reset status on connect
+
+        if (this.isConnecting && this.mcBot) {
+            return; // Already connecting or connected
+        }
+
         if (this.config.host === 'localhost' || this.config.host === '') {
             Logger.error("No Server IP set! (Defaulting to localhost failed).");
             Logger.system("👉 Type command: !setip <ip> (Example: !setip play.hypixel.net)");
             return;
         }
+
+        this.isConnecting = true;
+        if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
 
         // Anti-Bot: Random delay before connecting (2-5 seconds)
         const delay = Math.floor(Math.random() * 3000) + 2000;
@@ -77,6 +87,7 @@ export class Bot {
 
     setupEvents() {
         this.mcBot.on('login', () => {
+            this.isConnecting = false; // Done connecting
             const msg = `🎮 Bot successfully joined as [ ${this.mcBot.username} ] ✅`;
             Logger.success(msg);
             Logger.system("Systems Online. Waiting for commands... 📡");
@@ -92,13 +103,16 @@ export class Bot {
         });
 
         this.mcBot.on('end', () => {
+            this.isConnecting = false;
             if (this.isBanned) {
                 Logger.error("⚠ Reconnect cancelled: Bot is BANNED from the server. 🚫");
                 return;
             }
             Logger.error('❌ Disconnected. Reconnecting in 10s... 🔄');
             this.stopAFK();
-            setTimeout(() => this.connect(), 10000);
+
+            if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = setTimeout(() => this.connect(), 10000);
         });
 
         this.mcBot.on('kicked', (reason) => {
@@ -484,6 +498,7 @@ export class Bot {
                 const key = typeof o.translate === 'string' ? o.translate : (o.translate.value || "");
                 if (key === 'multiplayer.disconnect.banned') out += "Banned from server.";
                 else if (key === 'multiplayer.disconnect.kicked') out += "Kicked by operator.";
+                else if (key === 'multiplayer.disconnect.duplicate_login') out += "Logged in from another location (Duplicate Login).";
                 else out += key;
             }
         };
