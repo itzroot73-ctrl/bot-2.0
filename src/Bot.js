@@ -51,6 +51,7 @@ export class Bot {
             username: this.config.username,
             auth: this.config.auth,
             version: this.config.version || false,
+            connectTimeout: 60000,
             hideErrors: true
         };
 
@@ -127,6 +128,10 @@ export class Bot {
             } else if (msg.includes('Unsupported protocol version') || msg.includes('minecraftVersion')) {
                 Logger.error("📡 Server Version Detection Failed 🤖");
                 Logger.system("👉 Check if the server is ONLINE or if the IP is correct.");
+            } else if (msg.includes('client timed out')) {
+                Logger.error("⏳ Connection Timeout! 🛑");
+                Logger.system("👉 The server is too slow to respond or Offline.");
+                Logger.system("👉 Try setting a specific version (e.g. 1.20.1) in config.json");
             } else {
                 Logger.error(`⚠️ Bot Error: ${msg} 🛠️`);
             }
