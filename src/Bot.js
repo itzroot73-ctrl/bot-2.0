@@ -166,6 +166,15 @@ export class Bot {
         const processedChats = new Set();
         setInterval(() => processedChats.clear(), 500);
 
+        this.mcBot.on('message', (jsonMsg) => {
+            const msg = jsonMsg.toString();
+            if (msg.includes('Chat disabled due to missing profile public key')) {
+                Logger.error("🚫 CHAT ERROR: Chat is disabled on this server! 🛑");
+                Logger.system("👉 Try turning OFF 'Enforce Secure Chat' in server settings.");
+                Logger.system("👉 Or, try setting auth to 'microsoft' in config.json");
+            }
+        });
+
         this.mcBot.on('chat', (username, message) => {
             if (username === this.mcBot.username) return;
             const fullMsg = `<${username}> ${message}`;
