@@ -226,6 +226,7 @@ export class Bot {
                 }
                 break;
 
+            case 'ipset':
             case 'setip':
                 if (args[1]) {
                     this.config.host = args[1];
