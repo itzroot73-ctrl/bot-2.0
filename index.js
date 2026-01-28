@@ -250,10 +250,32 @@ function createBot() {
         username: username,
         auth: config.auth,
         version: config.version === false ? undefined : config.version,
-        hideErrors: true // Supress some low-level logging
+        hideErrors: true,
+        loadInternalPlugins: false // Disable default plugins to avoid inventory crash
     };
 
     bot = mineflayer.createBot(botOptions);
+
+    // Manually load essential plugins (Excluding inventory/simple_inventory)
+    const registry = require('mineflayer').plugins;
+    const safePlugins = [
+        registry.loader,
+        registry.game,
+        registry.kick,
+        registry.chat,
+        registry.time,
+        registry.health,
+        registry.settings,
+        registry.entities,
+        registry.physics,
+        registry.pathfinder // if installed
+        // registry.simple_inventory - EXCLUDED
+        // registry.inventory - EXCLUDED
+    ];
+
+    safePlugins.forEach(plugin => {
+        if (plugin) bot.loadPlugin(plugin);
+    });
 
     bot.on('login', () => {
         log(`Logged in as ${bot.username} (Version: ${config.version})`);
