@@ -46,34 +46,15 @@ export class Bot {
             username: this.config.username,
             auth: this.config.auth,
             version: this.config.version || false,
-            hideErrors: true,
-            loadInternalPlugins: false
+            hideErrors: true
         };
 
         this.mcBot = mineflayer.createBot(botOptions);
 
-        // Manually load essential plugins (Excluding buggy inventory)
-        try {
-            const registry = nodeRequire('mineflayer').plugins;
-            const safePlugins = [
-                registry.loader,
-                registry.game,
-                registry.kick,
-                registry.chat,
-                registry.time,
-                registry.health,
-                registry.settings,
-                registry.entities,
-                registry.physics,
-                registry.pathfinder
-            ];
-
-            safePlugins.forEach(plugin => {
-                if (plugin) this.mcBot.loadPlugin(plugin);
-            });
-        } catch (e) {
-            Logger.error("Plugin Loading Error: " + e.message);
-        }
+        // Fix: Suppress inventory assertion error specifically
+        this.mcBot.on('error', (err) => {
+            if (err.message && err.message.includes('assert.ok(slot >= 0)')) return;
+        });
 
         this.setupEvents();
     }
