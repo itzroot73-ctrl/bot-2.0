@@ -395,8 +395,8 @@ export class Bot {
                 }
                 break;
 
-            case 'bitmobe':
             case 'bitmove':
+            case 'bitmobe':
                 if (!this.mcBot || !this.mcBot.entity) return;
                 this.stopAFK();
 
@@ -404,8 +404,9 @@ export class Bot {
                 const pos = this.mcBot.entity.position;
 
                 // Calculate position 3 blocks forward based on yaw
-                const dx = -3 * Math.sin(yaw);
-                const dz = -3 * Math.cos(yaw);
+                // In Mineflayer: Yaw 0 is South (+Z), PI/2 is West (+X), PI is North (-Z)
+                const dx = 3 * Math.sin(yaw);
+                const dz = 3 * Math.cos(yaw);
                 const targetPos = pos.offset(dx, 0, dz);
 
                 const moveGoal = new GoalNear(targetPos.x, targetPos.y, targetPos.z, 1);
@@ -564,7 +565,7 @@ export class Bot {
                     Logger.info("  !jump, !wave       - Perform Actions");
                     Logger.info("  !spin              - Spin Around");
                     Logger.info("  !botgo X Y Z       - Move to Coords");
-                    Logger.info("  !bitmobe           - Move 3 blocks forward");
+                    Logger.info("  !bitmove           - Move 3 blocks forward");
                     Logger.info("  !stop              - Stop Movement");
                     Logger.info("  !uptime            - Show Bot Uptime");
                     Logger.info("  !setreply <T> and <R> - Add Auto-Reply/Command");
