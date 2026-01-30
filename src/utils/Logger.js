@@ -44,8 +44,8 @@ class Logger {
    ╚██████╔╝██║ ╚████║██║██║        ██║    █████╔╝
     ╚═════╝ ╚═╝  ╚═══╝╚═╝╚═╝        ╚═╝    ╚════╝ 
 
-   🤖 AFK 2.0 - Minecraft Bot
-   🚀 Online | Stable | Professional
+    🤖 UNIFY9 - AFK Bot 3.2
+    🚀 Ultra Stealth | Anti-Detection | Advanced AFK
         `));
         console.log(primaryColor('=================================================='));
         console.log('');

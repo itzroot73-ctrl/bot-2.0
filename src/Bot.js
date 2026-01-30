@@ -245,6 +245,16 @@ export class Bot {
                 setTimeout(() => this.mcBot.setControlState('sneak', false), 2000);
             }
 
+            // --- DISCONNECT DETECTION ---
+            const disconnectRegex = /you (left|were kicked|disconnected)/i;
+            if (disconnectRegex.test(msg)) {
+                Logger.error(`🚪 DISCONNECT DETECTED: "${msg}"`);
+                this.discord.send(`⚠️ **Bot Disconnected!** (Reason: ${msg})`);
+                if (this.mcBot) this.mcBot.quit();
+                setTimeout(() => this.connect(), 2000);
+                return;
+            }
+
             // Check Auto-Replies (Works for Player & System messages)
             if (this.config.triggers) {
                 const normalizedMsg = msg.replace(/\s+/g, ' ').toLowerCase();
@@ -273,13 +283,12 @@ export class Bot {
             if (position === 'game_info') return;
             if (chatCache.has(message)) return; // Already logged by 'chat'
 
-            const lowerMsg = message.toLowerCase();
-
-            if (lowerMsg.includes('you left the game') || lowerMsg.includes('you have been kicked')) {
-                Logger.error(`🚪 DISCONNECT DETECTED via Chat: "${message}"`);
-                this.discord.send(`⚠️ **Bot Disconnected!** (Server message: ${message})`);
+            const disconnectRegex = /you (left|were kicked|disconnected)/i;
+            if (disconnectRegex.test(message)) {
+                Logger.error(`🚪 DISCONNECT DETECTED: "${message}"`);
+                this.discord.send(`⚠️ **Bot Disconnected!** (Reason: ${message})`);
                 if (this.mcBot) this.mcBot.quit();
-                this.connect();
+                setTimeout(() => this.connect(), 2000);
                 return;
             }
 
