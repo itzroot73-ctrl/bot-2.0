@@ -8,12 +8,13 @@
         "start": "node index.js"
     },
     "dependencies": {
-        "mineflayer": "latest",
-        "mineflayer-pathfinder": "latest",
-        "minecraft-protocol": "latest",
-        "discord.js": "^14.14.1",
         "chalk": "^5.3.0",
+        "discord.js": "^14.14.1",
         "figlet": "^1.7.0",
+        "minecraft-protocol": "latest",
+        "mineflayer": "latest",
+        "mineflayer-auto-eat": "^5.0.3",
+        "mineflayer-pathfinder": "latest",
         "moment-timezone": "^0.5.43",
         "prompt-sync": "^4.2.0"
     }

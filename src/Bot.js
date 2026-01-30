@@ -6,6 +6,7 @@ import { DiscordHandler } from './modules/DiscordHandler.js';
 import { createRequire } from 'module';
 const nodeRequire = createRequire(import.meta.url);
 const { pathfinder, Movements, goals } = nodeRequire('mineflayer-pathfinder');
+const { loader: autoEat } = nodeRequire('mineflayer-auto-eat');
 const { GoalNear, GoalFollow } = goals;
 
 export class Bot {
@@ -19,6 +20,10 @@ export class Bot {
         this.isConnecting = false;
         this.reconnectTimeout = null;
         this.startTime = Date.now(); // Track when the bot started
+
+        // Advanced Scripting
+        this.scripts = new Map();
+        this.scriptIdCounter = 1;
 
         // Setup Readline
         this.rl = readline.createInterface({
@@ -76,6 +81,7 @@ export class Bot {
             this.mcBot = mineflayer.createBot(botOptions);
             this.mcBot.setMaxListeners(100); // Prevent MaxListenersExceededWarning
             this.mcBot.loadPlugin(pathfinder);
+            this.mcBot.loadPlugin(autoEat);
 
             // Fix: Suppress inventory assertion error specifically
             this.mcBot.on('error', (err) => {
@@ -97,7 +103,15 @@ export class Bot {
             const world = this.mcBot.world?.name || "Overworld";
             Logger.success(`🎮 Bot ACTIVE: [ ${this.mcBot.username} ] joined ${world} ✅`);
             Logger.info(`📍 Position: X:${Math.round(pos.x)} Y:${Math.round(pos.y)} Z:${Math.round(pos.z)}`);
+            Logger.info(`📍 Position: X:${Math.round(pos.x)} Y:${Math.round(pos.y)} Z:${Math.round(pos.z)}`);
             Logger.system("Systems Online. Waiting for commands... 📡");
+
+            // Init Auto-Eat
+            this.mcBot.autoEat.options = {
+                priority: 'foodPoints',
+                startAt: 14,
+                bannedFood: []
+            };
 
             const defaultMove = new Movements(this.mcBot);
             this.mcBot.pathfinder.setMovements(defaultMove);
@@ -600,6 +614,12 @@ export class Bot {
                     Logger.info("  !iphistory         - Show Used IPs");
                     Logger.info("  !reconnect         - Force Reconnect");
                     Logger.info("  !quit              - Stop Bot");
+                    Logger.system("--- Advanced ---");
+                    Logger.info("  !autoeat on/off    - Auto Eat");
+                    Logger.info("  !drop <all/held>   - Drop Items");
+                    Logger.info("  !look <player>     - Look at Player");
+                    Logger.info("  !repeat <sec> <cmd>- Loop Command");
+                    Logger.info("  !gui / !click      - Inventory Tools");
                     Logger.system("===============================");
                 } else if (source === "Discord") {
                     this.discord.send(`
@@ -638,6 +658,107 @@ export class Bot {
 
             default:
                 if (this.mcBot) this.mcBot.chat(`/${cmdString}`);
+                break;
+
+            // --- PORTED FEATURES ---
+            case 'autoeat':
+                if (args[1] === 'on') {
+                    this.mcBot.autoEat.enable();
+                    Logger.success("🍗 Auto-Eat: ENABLED");
+                    this.discord.send("🍗 **Auto-Eat: ENABLED**");
+                } else if (args[1] === 'off') {
+                    this.mcBot.autoEat.disable();
+                    Logger.info("❌ Auto-Eat: DISABLED");
+                    this.discord.send("❌ **Auto-Eat: DISABLED**");
+                } else {
+                    Logger.error("Usage: !autoeat on/off");
+                }
+                break;
+
+            case 'eat':
+                Logger.info("🍗 Eating now...");
+                this.mcBot.autoEat.eat().catch(e => Logger.error(e.message));
+                break;
+
+            case 'drop':
+                const dropMode = args[1] || 'all';
+                Logger.info(`🗑️ Dropping ${dropMode} items...`);
+                this.discord.send(`🗑️ **Dropping Items** (${dropMode})...`);
+
+                const items = this.mcBot.inventory.items();
+                if (dropMode === 'held') {
+                    const held = this.mcBot.inventory.slots[this.mcBot.getEquipmentDestSlot('hand')];
+                    if (held) this.mcBot.tossStack(held);
+                } else {
+                    // Drop all logic
+                    const dropLoop = async () => {
+                        for (const item of items) {
+                            try { await this.mcBot.tossStack(item); } catch (e) { }
+                            await new Promise(r => setTimeout(r, 200));
+                        }
+                        Logger.success("✅ Drop Complete.");
+                        this.discord.send("✅ **Drop Complete**");
+                    };
+                    dropLoop();
+                }
+                break;
+
+            case 'look':
+                if (args.length === 2) {
+                    const target = this.mcBot.players[args[1]]?.entity;
+                    if (target) {
+                        this.mcBot.lookAt(target.position.offset(0, 1.6, 0));
+                        Logger.info(`👀 Looking at ${args[1]}`);
+                        this.discord.send(`👀 **Looking at** \`${args[1]}\``);
+                    } else {
+                        Logger.error("Player not found!");
+                    }
+                }
+                break;
+
+            case 'gui':
+                const window = this.mcBot.currentWindow;
+                if (window) {
+                    const title = JSON.parse(window.title).text || window.title;
+                    Logger.info(`🪟 Current Window: ${title}`);
+                    this.discord.send(`🪟 **Window Open**: \`${title}\``);
+                } else {
+                    Logger.info("No window open.");
+                }
+                break;
+
+            case 'click':
+                if (args[1]) {
+                    const slot = parseInt(args[1]);
+                    if (this.mcBot.currentWindow) {
+                        this.mcBot.clickWindow(slot, 0, 0);
+                        Logger.info(`🖱️ Clicked slot ${slot}`);
+                    }
+                }
+                break;
+
+            case 'repeat':
+                const sec = parseInt(args[1]);
+                const cmdToRun = args.slice(2).join(' ');
+                if (sec > 0 && cmdToRun) {
+                    const id = this.scriptIdCounter++;
+                    const interval = setInterval(() => {
+                        if (this.mcBot) this.mcBot.chat(cmdToRun);
+                    }, sec * 1000);
+                    this.scripts.set(id, interval);
+                    Logger.success(`🔁 Started Loop #${id}: "${cmdToRun}"`);
+                    this.discord.send(`🔁 **Loop Started** (#${id})`);
+                }
+                break;
+
+            case 'stoploop':
+                const loopId = parseInt(args[1]);
+                if (this.scripts.has(loopId)) {
+                    clearInterval(this.scripts.get(loopId));
+                    this.scripts.delete(loopId);
+                    Logger.success(`🛑 Stopped Loop #${loopId}`);
+                    this.discord.send(`🛑 **Stopped Loop** (#${loopId})`);
+                }
                 break;
         }
     }
