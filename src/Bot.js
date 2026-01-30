@@ -170,14 +170,21 @@ export class Bot {
 
         // --- ADVANCED ANTI-BOT VERIFICATION ---
         this.mcBot.on('windowOpen', async (window) => {
-            const title = window.title ? JSON.parse(window.title).text || window.title : "Unknown Window";
-            Logger.system(`📂 Verification GUI Opened: "${title}"`);
+            const rawTitle = window.title;
+            let title = "Unknown Window";
+
+            try {
+                title = JSON.parse(rawTitle).text || rawTitle;
+            } catch (e) {
+                title = rawTitle;
+            }
 
             // Common Captcha Keywords
             const captchaKeywords = ["verify", "captcha", "click", "identity", "human"];
-            const lowerTitle = title.toLowerCase();
+            const lowerTitle = String(title).toLowerCase();
 
             if (captchaKeywords.some(k => lowerTitle.includes(k))) {
+                Logger.system(`📂 Verification GUI Detected: "${title}"`);
                 Logger.info("🔍 Captcha GUI detected! Scanning items...");
 
                 // Scan all items in the window
