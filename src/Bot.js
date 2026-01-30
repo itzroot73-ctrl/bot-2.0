@@ -458,6 +458,7 @@ export class Bot {
 
                 const uptimeMsg = `⏳ Bot Uptime: ${uptimeStr} 🚀`;
                 if (source === "Console") Logger.info(uptimeMsg);
+                else if (source === "Discord") this.discord.send(uptimeMsg);
                 else this.mcBot.chat(uptimeMsg);
                 break;
 
@@ -467,6 +468,7 @@ export class Bot {
                     const food = Math.round(this.mcBot.food);
                     const msg = `Health: ${health} ❤️ | Food: ${food} 🍗 | Pos: ${this.mcBot.entity.position.toString()}`;
                     if (source === "Console") Logger.info(msg);
+                    else if (source === "Discord") this.discord.send(msg);
                     else this.mcBot.chat(msg);
                 }
                 break;
@@ -583,6 +585,19 @@ export class Bot {
                     Logger.info("  !reconnect         - Force Reconnect");
                     Logger.info("  !quit              - Stop Bot");
                     Logger.system("===============================");
+                } else if (source === "Discord") {
+                    this.discord.send(`
+**🤖 UNIFY9 BOT COMMANDS**
+\`!afk on/off\` - Toggle AFK Mode
+\`!botgo X Y Z\` - Move to Coords
+\`!botgo <player>\` - Follow Player
+\`!bitmove\` - Move 3 blocks forward
+\`!reconnect\` - Force Reconnect
+\`!setreply <trigger> and <reply>\` - Auto-Reply
+\`!uptime\` - Show Bot Uptime
+\`!botinfo\` - Health & Food status
+\`!quit\` - Stop Bot
+`);
                 } else {
                     this.mcBot.chat("Available Commands: !afk, !jump, !wave, !spin, !botinfo");
                 }
