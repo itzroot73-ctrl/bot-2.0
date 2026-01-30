@@ -167,11 +167,83 @@ export class Bot {
             }
         });
 
+        // --- ADVANCED ANTI-BOT VERIFICATION ---
+        this.mcBot.on('windowOpen', async (window) => {
+            const title = window.title ? JSON.parse(window.title).text || window.title : "Unknown Window";
+            Logger.system(`📂 Verification GUI Opened: "${title}"`);
+
+            // Common Captcha Keywords
+            const captchaKeywords = ["verify", "captcha", "click", "identity", "human"];
+            const lowerTitle = title.toLowerCase();
+
+            if (captchaKeywords.some(k => lowerTitle.includes(k))) {
+                Logger.info("🔍 Captcha GUI detected! Scanning items...");
+
+                // Scan all items in the window
+                const items = window.slots.filter(item => item !== null);
+                for (const item of items) {
+                    const itemName = item.displayName.toLowerCase();
+                    const itemLore = item.nbt?.value?.display?.value?.Lore?.value?.map(l => l.value.toLowerCase()).join(" ") || "";
+
+                    // Logic: If the window title asks to click a specific item (e.g. "Click the Apple")
+                    // we look for that item. For now, we click items with "Verify" or high-priority items.
+                    if (itemName.includes('verify') || itemLore.includes('verify') || itemName.includes('click')) {
+                        Logger.success(`🎯 Found Verification Item: ${item.displayName}. Clicking...`);
+                        await this.mcBot.clickWindow(item.slot, 0, 0);
+                        return;
+                    }
+                }
+
+                // Fallback: If no specific item found, but it's a verification window, 
+                // try to click the first non-air item if there's only one.
+                if (items.length === 1) {
+                    Logger.info(`🖱️ Only one item found, attempting fallback click on ${items[0].displayName}...`);
+                    await this.mcBot.clickWindow(items[0].slot, 0, 0);
+                }
+            }
+        });
+
         const chatCache = new Set();
         setInterval(() => chatCache.clear(), 3000); // Clear every 3s to prevent memory bloat
 
         this.mcBot.on('message', (jsonMsg) => {
             const msg = jsonMsg.toString();
+            const lowerMsg = msg.toLowerCase();
+
+            // --- SMART CHAT VERIFICATION SOLVER ---
+            // 1. Slash command verification (e.g. /verify 1234)
+            const verifyMatch = msg.match(/\/(verify|captcha|register|confirm)\s+(\w+)/i);
+            if (verifyMatch) {
+                const cmd = verifyMatch[0];
+                Logger.success(`🧬 Chat Captcha Detected: Running ${cmd}`);
+                this.mcBot.chat(cmd);
+            }
+
+            // 2. Math Captcha (e.g. "What is 5 + 3?")
+            const mathMatch = msg.match(/(\d+)\s*([\+\-\*])\s*(\d+)\s*=\s*\?/);
+            if (mathMatch) {
+                const a = parseInt(mathMatch[1]);
+                const op = mathMatch[2];
+                const b = parseInt(mathMatch[3]);
+                let res = 0;
+                if (op === '+') res = a + b;
+                if (op === '-') res = a - b;
+                if (op === '*') res = a * b;
+                Logger.success(`🧮 Math Captcha: ${a} ${op} ${b} = ${res}. Sending...`);
+                this.mcBot.chat(res.toString());
+            }
+
+            // 3. Instruction following (e.g. "Jump to verify")
+            if (lowerMsg.includes("jump to verify") || lowerMsg.includes("jump and verify")) {
+                Logger.info("🏃 Instruction Captcha: Jumping...");
+                this.mcBot.setControlState('jump', true);
+                setTimeout(() => this.mcBot.setControlState('jump', false), 500);
+            }
+            if (lowerMsg.includes("sneak to verify")) {
+                Logger.info("🧍 Instruction Captcha: Sneaking...");
+                this.mcBot.setControlState('sneak', true);
+                setTimeout(() => this.mcBot.setControlState('sneak', false), 2000);
+            }
 
             // Check Auto-Replies (Works for Player & System messages)
             if (this.config.triggers) {
