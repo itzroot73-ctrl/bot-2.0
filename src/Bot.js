@@ -273,7 +273,16 @@ export class Bot {
             if (position === 'game_info') return;
             if (chatCache.has(message)) return; // Already logged by 'chat'
 
-            // Log only unique/meaningful system messages
+            const lowerMsg = message.toLowerCase();
+
+            if (lowerMsg.includes('you left the game') || lowerMsg.includes('you have been kicked')) {
+                Logger.error(`🚪 DISCONNECT DETECTED via Chat: "${message}"`);
+                this.discord.send(`⚠️ **Bot Disconnected!** (Server message: ${message})`);
+                if (this.mcBot) this.mcBot.quit();
+                this.connect();
+                return;
+            }
+
             Logger.chat('Server', message);
         });
     }
