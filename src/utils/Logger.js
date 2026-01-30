@@ -58,6 +58,7 @@ class Logger {
         let coloredPrefix;
         switch (type) {
             case 'INFO': coloredPrefix = infoColor(prefix); break;
+            case 'WARNING': coloredPrefix = chalk.yellow(prefix); break;
             case 'ERROR': coloredPrefix = errorColor(prefix); break;
             case 'SUCCESS': coloredPrefix = successColor(prefix); break;
             case 'CHAT': coloredPrefix = primaryColor(prefix); break;
@@ -69,6 +70,7 @@ class Logger {
     }
 
     info(msg) { this.log(msg, 'INFO'); }
+    warning(msg) { this.log(msg, 'WARNING'); }
     error(msg) { this.log(msg, 'ERROR'); }
     success(msg) { this.log(msg, 'SUCCESS'); }
     chat(sender, msg) {

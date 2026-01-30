@@ -438,20 +438,26 @@ export class Bot {
                 if (!this.mcBot || !this.mcBot.entity) return;
                 this.stopAFK();
 
+                // Check for custom steps (default: 3)
+                let dist = 3;
+                if (args[1]) {
+                    const parsed = parseFloat(args[1]);
+                    if (!isNaN(parsed) && parsed > 0) dist = parsed;
+                }
+
                 const yaw = this.mcBot.entity.yaw;
                 const pos = this.mcBot.entity.position;
 
-                // Calculate position 3 blocks forward based on yaw
-                // In Mineflayer: Yaw 0 is South (+Z), PI/2 is West (+X), PI is North (-Z)
-                const dx = 3 * Math.sin(yaw);
-                const dz = 3 * Math.cos(yaw);
+                // Calculate position based on yaw and dist
+                const dx = dist * Math.sin(yaw);
+                const dz = dist * Math.cos(yaw);
                 const targetPos = pos.offset(dx, 0, dz);
 
                 const moveGoal = new GoalNear(targetPos.x, targetPos.y, targetPos.z, 1);
                 this.mcBot.pathfinder.setGoal(moveGoal);
 
-                Logger.info(`Moving 3 blocks forward to [${Math.round(targetPos.x)}, ${Math.round(targetPos.z)}]... 🚶‍♂️`);
-                this.discord.send(`🚶‍♂️ **Moving Forward** (3 blocks)...`);
+                Logger.info(`Moving ${dist} blocks forward to [${Math.round(targetPos.x)}, ${Math.round(targetPos.z)}]... 🚶‍♂️`);
+                this.discord.send(`🚶‍♂️ **Moving Forward** (${dist} blocks)...`);
                 break;
 
             case 'pathfind':
