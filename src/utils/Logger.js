@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import figlet from 'figlet';
 import readline from 'readline';
 
-const primaryColor = chalk.hex('#ff00ff'); // Neon Pink/Magenta theme
+const primaryColor = chalk.hex('#00ffea'); // Cyan/Aqua theme
 const infoColor = chalk.cyan;
 const errorColor = chalk.red;
 const successColor = chalk.green;

@@ -27,7 +27,7 @@ export class Bot {
             prompt: ''
         });
         Logger.setReadline(this.rl);
-        Logger.info("BANANA 3.0 Module Loaded (Ultra v3.1 Elite) 🍇");
+        Logger.info("UNIFY9 Module Loaded (Elite v3.2) 🍇");
     }
 
     async init() {
@@ -534,11 +534,18 @@ export class Bot {
                     Logger.info("  !botinfo           - Show Health/Food");
                     Logger.info("  !setip <ip>        - Change Server IP");
                     Logger.info("  !iphistory         - Show Used IPs");
+                    Logger.info("  !reconnect         - Force Reconnect");
                     Logger.info("  !quit              - Stop Bot");
                     Logger.system("===============================");
                 } else {
                     this.mcBot.chat("Available Commands: !afk, !jump, !wave, !spin, !botinfo");
                 }
+                break;
+
+            case 'reconnect':
+                Logger.info("Forcing reconnection... ♻️");
+                if (this.mcBot) this.mcBot.quit();
+                this.connect();
                 break;
 
             case 'quit':
