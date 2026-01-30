@@ -7,6 +7,8 @@ export class DiscordHandler {
         this.bot = botInstance; // Reference to Minecraft Bot wrapper
         this.client = null;
         this.channel = null;
+        this.messageQueue = [];
+        this.queueInterval = null;
     }
 
     async init() {
@@ -55,12 +57,39 @@ export class DiscordHandler {
 
         try {
             await this.client.login(this.config.discord.token);
+
+            // Queue Processor: Flushes messages every 2 seconds
+            this.queueInterval = setInterval(() => this.processQueue(), 2000);
+
         } catch (error) {
             Logger.error(`Discord Login Failed: ${error.message}`);
         }
     }
 
     send(message) {
-        if (this.channel) this.channel.send(message).catch(() => { });
+        if (!message) return;
+        this.messageQueue.push(message);
+    }
+
+    processQueue() {
+        if (this.messageQueue.length === 0 || !this.channel) return;
+
+        // Combine messages safely (Discord limit is 2000 chars)
+        let chunk = "";
+        const maxLen = 1900;
+
+        while (this.messageQueue.length > 0) {
+            const nextMsg = this.messageQueue[0];
+            if (chunk.length + nextMsg.length > maxLen) break;
+
+            const msg = this.messageQueue.shift();
+            chunk += msg + "\n";
+        }
+
+        if (chunk.trim().length > 0) {
+            this.channel.send(chunk).catch(err => {
+                Logger.error(`Failed to send Discord chunk: ${err.message}`);
+            });
+        }
     }
 }
