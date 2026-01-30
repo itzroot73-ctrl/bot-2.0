@@ -638,12 +638,20 @@ export class Bot {
 \`!afk on/off\` - Toggle AFK Mode
 \`!botgo X Y Z\` - Move to Coords
 \`!botgo <player>\` - Follow Player
-\`!bitmove\` - Move 3 blocks forward
+\`!bitmove [steps]\` - Move Forward
 \`!reconnect\` - Force Reconnect
 \`!setreply <trigger> and <reply>\` - Auto-Reply
 \`!uptime\` - Show Bot Uptime
 \`!botinfo\` - Health & Food status
-\`!quit\` - Stop Bot
+
+**🛠️ Advanced Features**
+\`!autoeat on/off\` - Auto Eat Food 🍗
+\`!drop <all/held>\` - Drop Items 🗑️
+\`!look <player>\` - Look at Player 👀
+\`!repeat <sec> <cmd>\` - Auto Loop 🔁
+\`!gui\` - Show Open Window 🪟
+\`!bones on/off\` - Bone Collector ☠️
+\`!quit\` - Stop Bot 🛑
 `);
                 } else {
                     this.mcBot.chat("Available Commands: !afk, !jump, !wave, !spin, !botinfo");
