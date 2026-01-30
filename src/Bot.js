@@ -2,6 +2,7 @@ import mineflayer from 'mineflayer';
 import readline from 'readline';
 import Logger from './utils/Logger.js';
 import { DiscordHandler } from './modules/DiscordHandler.js';
+import { BoneCollector } from './modules/BoneCollector.js';
 
 import { createRequire } from 'module';
 const nodeRequire = createRequire(import.meta.url);
@@ -14,6 +15,7 @@ export class Bot {
         this.config = config;
         this.mcBot = null;
         this.discord = new DiscordHandler(config, this);
+        this.boneCollector = null;
         this.afkInterval = null;
         this.afkEnabled = false;
         this.isBanned = false; // Detection for ban status
@@ -88,6 +90,9 @@ export class Bot {
                 if (err.message && err.message.includes('assert.ok(slot >= 0)')) return;
             });
 
+            // Init Bone Collector
+            this.boneCollector = new BoneCollector(this.mcBot, this.config);
+
             this.setupEvents();
         }, delay);
     }
@@ -102,7 +107,6 @@ export class Bot {
             const pos = this.mcBot.entity.position;
             const world = this.mcBot.world?.name || "Overworld";
             Logger.success(`🎮 Bot ACTIVE: [ ${this.mcBot.username} ] joined ${world} ✅`);
-            Logger.info(`📍 Position: X:${Math.round(pos.x)} Y:${Math.round(pos.y)} Z:${Math.round(pos.z)}`);
             Logger.info(`📍 Position: X:${Math.round(pos.x)} Y:${Math.round(pos.y)} Z:${Math.round(pos.z)}`);
             Logger.system("Systems Online. Waiting for commands... 📡");
 
@@ -620,6 +624,7 @@ export class Bot {
                     Logger.info("  !look <player>     - Look at Player");
                     Logger.info("  !repeat <sec> <cmd>- Loop Command");
                     Logger.info("  !gui / !click      - Inventory Tools");
+                    Logger.info("  !bones on/off      - Bone Farm Mode");
                     Logger.system("===============================");
                 } else if (source === "Discord") {
                     this.discord.send(`
@@ -760,6 +765,42 @@ export class Bot {
                     this.discord.send(`🛑 **Stopped Loop** (#${loopId})`);
                 }
                 break;
+
+            case 'bones':
+                if (args[1] === 'on') {
+                    if (this.boneCollector) {
+                        this.boneCollector.start();
+                        this.discord.send("☠️ **Bone Collector: STARTING**");
+                    }
+                } else if (args[1] === 'off') {
+                    if (this.boneCollector) {
+                        this.boneCollector.stop();
+                        this.discord.send("☠️ **Bone Collector: STOPPED**");
+                    }
+                }
+                break;
+
+            case 'spawner':
+                if (args.length === 4) {
+                    const x = parseInt(args[1]), y = parseInt(args[2]), z = parseInt(args[3]);
+                    if (!this.config.boneCollector) this.config.boneCollector = {};
+                    this.config.boneCollector.spawnerPos = { x, y, z };
+                    this.saveConfig();
+                    Logger.success(`📍 Spawner set to: ${x}, ${y}, ${z}`);
+                    this.discord.send(`📍 **Spawner Set**: ${x}, ${y}, ${z}`);
+                }
+                break;
+
+            case 'chest':
+                if (args.length === 4) {
+                    const x = parseInt(args[1]), y = parseInt(args[2]), z = parseInt(args[3]);
+                    if (!this.config.boneCollector) this.config.boneCollector = {};
+                    this.config.boneCollector.chestPos = { x, y, z };
+                    this.saveConfig();
+                    Logger.success(`📦 Chest set to: ${x}, ${y}, ${z}`);
+                    this.discord.send(`📦 **Chest Set**: ${x}, ${y}, ${z}`);
+                }
+                break;
         }
     }
 
@@ -838,5 +879,11 @@ export class Bot {
         } catch (e) {
             return JSON.stringify(reason);
         }
+    }
+
+    saveConfig() {
+        import('fs').then(fs => {
+            fs.writeFileSync('./config.json', JSON.stringify(this.config, null, 2));
+        });
     }
 }
