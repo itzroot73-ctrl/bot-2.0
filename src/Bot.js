@@ -395,6 +395,25 @@ export class Bot {
                 }
                 break;
 
+            case 'bitmobe':
+            case 'bitmove':
+                if (!this.mcBot || !this.mcBot.entity) return;
+                this.stopAFK();
+
+                const yaw = this.mcBot.entity.yaw;
+                const pos = this.mcBot.entity.position;
+
+                // Calculate position 3 blocks forward based on yaw
+                const dx = -3 * Math.sin(yaw);
+                const dz = -3 * Math.cos(yaw);
+                const targetPos = pos.offset(dx, 0, dz);
+
+                const moveGoal = new GoalNear(targetPos.x, targetPos.y, targetPos.z, 1);
+                this.mcBot.pathfinder.setGoal(moveGoal);
+
+                Logger.info(`Moving 3 blocks forward to [${Math.round(targetPos.x)}, ${Math.round(targetPos.z)}]... 🚶‍♂️`);
+                break;
+
             case 'pathfind':
             case 'pathfiend':
                 if (args[1] === 'off') {
@@ -545,6 +564,7 @@ export class Bot {
                     Logger.info("  !jump, !wave       - Perform Actions");
                     Logger.info("  !spin              - Spin Around");
                     Logger.info("  !botgo X Y Z       - Move to Coords");
+                    Logger.info("  !bitmobe           - Move 3 blocks forward");
                     Logger.info("  !stop              - Stop Movement");
                     Logger.info("  !uptime            - Show Bot Uptime");
                     Logger.info("  !setreply <T> and <R> - Add Auto-Reply/Command");
