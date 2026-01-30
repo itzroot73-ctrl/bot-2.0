@@ -129,9 +129,11 @@ export class Bot {
             this.isConnecting = false;
             if (this.isBanned) {
                 Logger.error("🚫 Reconnect Cancelled: Bot is BANNED from the server.");
+                this.discord.send("⛔ **Bot Banned** (Reconnect Cancelled)");
                 return;
             }
             Logger.error('♻️ Connection Lost. Retrying in 10s... 🔄');
+            this.discord.send("⚠️ **Connection Lost**\n🔄 Status: **Reconnecting in 10s...**");
             this.stopAFK();
 
             if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
