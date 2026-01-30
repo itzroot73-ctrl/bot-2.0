@@ -50,8 +50,15 @@ export class DiscordHandler {
                 if (content.startsWith('!')) {
                     // Execute command
                     this.bot.handleCommand(content.slice(1), "Discord");
+                } else if (content.startsWith('?')) {
+                    // Chat to Server (Remove ?)
+                    const chatMsg = content.slice(1).trim();
+                    if (chatMsg.length > 0) {
+                        this.bot.mcBot.chat(chatMsg);
+                        this.send(`💬 **Sent to Server**: ${chatMsg}`);
+                    }
                 }
-                // Regular chat messages are ignored (as requested) prevent loops/spam
+                // Regular chat messages are ignored (as requested)
             }
         });
 
