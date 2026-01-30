@@ -293,6 +293,7 @@ export class Bot {
             }
 
             Logger.chat('Server', message);
+            this.discord.send(`ℹ️ **[Server]**: ${message}`);
         });
     }
 
