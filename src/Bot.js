@@ -456,9 +456,9 @@ export class Bot {
                 if (minutes > 0) uptimeStr += `${minutes}m `;
                 uptimeStr += `${seconds}s`;
 
-                const uptimeMsg = `⏳ Bot Uptime: ${uptimeStr} 🚀`;
+                const uptimeMsg = `⏳ **Bot Uptime**: ${uptimeStr} 🚀`;
                 if (source === "Console") Logger.info(uptimeMsg);
-                else if (source === "Discord") this.discord.send(uptimeMsg);
+                else if (source === "Discord") this.discord.send(`>>> ⌛ **Uptime Status**\n**Time**: ${uptimeStr}\n🚀 Status: **Online & Stable**`);
                 else this.mcBot.chat(uptimeMsg);
                 break;
 
@@ -468,7 +468,7 @@ export class Bot {
                     const food = Math.round(this.mcBot.food);
                     const msg = `Health: ${health} ❤️ | Food: ${food} 🍗 | Pos: ${this.mcBot.entity.position.toString()}`;
                     if (source === "Console") Logger.info(msg);
-                    else if (source === "Discord") this.discord.send(msg);
+                    else if (source === "Discord") this.discord.send(`>>> 📊 **Bot Status**\n❤️ **Health**: ${health} / 20\n🍗 **Food**: ${food} / 20\n📍 **Position**: ${this.mcBot.entity.position.toString()}`);
                     else this.mcBot.chat(msg);
                 }
                 break;
