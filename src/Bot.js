@@ -20,6 +20,7 @@ export class Bot {
         this.afkEnabled = false;
         this.isBanned = false; // Detection for ban status
         this.isConnecting = false;
+        this.preventEndReconnect = false; // Flag to stop double reconnects
         this.reconnectTimeout = null;
         this.startTime = Date.now(); // Track when the bot started
 
@@ -45,6 +46,7 @@ export class Bot {
 
     connect() {
         this.isBanned = false; // Reset status on connect
+        this.preventEndReconnect = false; // Reset flag for new connection attempt
 
         if (this.isConnecting && this.mcBot) {
             return; // Already connecting or connected
@@ -127,6 +129,13 @@ export class Bot {
 
         this.mcBot.on('end', () => {
             this.isConnecting = false;
+
+            // If we already handled a specific kick (like Ghost Session), don't double schedule
+            if (this.preventEndReconnect) {
+                this.preventEndReconnect = false; // Reset for next time
+                return;
+            }
+
             if (this.isBanned) {
                 Logger.error("🚫 Reconnect Cancelled: Bot is BANNED from the server.");
                 this.discord.send("⛔ **Bot Banned** (Reconnect Cancelled)");
@@ -155,10 +164,13 @@ export class Bot {
                 Logger.warning(`⚠️ Ghost Session Detected! ("${cleanReason}")`);
                 Logger.info("⏳ Waiting 60 seconds for server to timeout old session...");
                 this.discord.send(`⚠️ **Ghost Session Detected**\nWaiting 60s to reconnect...`);
-                // Override standard reconnect time
+
+                // Set flag to stop 'end' handler from interfering
+                this.preventEndReconnect = true;
+
                 if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
                 this.reconnectTimeout = setTimeout(() => this.connect(), 60000);
-                this.isConnecting = true; // Prevent immediate 'end' event retry
+                this.isConnecting = true; // Keep connecting state
             } else {
                 Logger.error(`🚪 DISCONNECTED: Bot was removed from server ✨`);
                 this.discord.send(`👢 **Bot Removed!** ⚠️\nReason: ${cleanReason}`);
