@@ -103,7 +103,8 @@ export class Bot {
             this.mcBot.pathfinder.setMovements(defaultMove);
 
             if (!this.afkInterval) this.startAFK();
-            this.discord.send(`✅ **${this.mcBot.username} Joined the Server!** 🎮`);
+            if (!this.afkInterval) this.startAFK();
+            this.discord.send(`>>> 🟢 **CONNECTED**\n**${this.mcBot.username}** has joined the server!\n🌍 World: ${world}\n📍 AFK Protocol: **ACTIVE**`);
         });
 
         this.mcBot.on('end', () => {
@@ -276,7 +277,8 @@ export class Bot {
             if (username === this.mcBot.username) return;
             chatCache.add(message); // Mark as handled
             Logger.chat(username, message);
-            this.discord.send(`💬 **${username}**: ${message}`);
+            Logger.chat(username, message);
+            this.discord.send(`**<${username}>** ${message}`);
         });
 
         this.mcBot.on('messagestr', (message, position) => {
@@ -293,7 +295,11 @@ export class Bot {
             }
 
             Logger.chat('Server', message);
-            this.discord.send(`ℹ️ **[Server]**: ${message}`);
+            try {
+                // Formatting for cleaner Discord look
+                const cleanMsg = message.replace(/§[0-9a-fk-or]/g, '');
+                this.discord.send(`\`[SERVER]\` ${cleanMsg}`);
+            } catch (e) { }
         });
     }
 
