@@ -149,6 +149,14 @@ export class Bot {
             } else if (lowerReason.includes('antibot') || lowerReason.includes('verification')) {
                 Logger.error(`🛡️ SECURITY: Access Denied (Anti-Bot)`);
                 Logger.system("👉 Hint: Change username or wait 10 minutes.");
+            } else if (lowerReason.includes('already connected') || lowerReason.includes('already logged')) {
+                Logger.warning(`⚠️ Ghost Session Detected! ("${cleanReason}")`);
+                Logger.info("⏳ Waiting 60 seconds for server to timeout old session...");
+                this.discord.send(`⚠️ **Ghost Session Detected**\nWaiting 60s to reconnect...`);
+                // Override standard reconnect time
+                if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+                this.reconnectTimeout = setTimeout(() => this.connect(), 60000);
+                this.isConnecting = true; // Prevent immediate 'end' event retry
             } else {
                 Logger.error(`🚪 DISCONNECTED: Bot was removed from server ✨`);
                 this.discord.send(`👢 **Bot Removed!** ⚠️\nReason: ${cleanReason}`);
