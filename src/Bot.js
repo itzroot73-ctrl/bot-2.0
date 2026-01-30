@@ -342,10 +342,12 @@ export class Bot {
                     this.afkEnabled = true;
                     this.startAFK();
                     Logger.success("✅ AFK Mode: Enabled");
+                    this.discord.send("✅ **AFK Mode: ENABLED**");
                 } else if (args[1] === 'off') {
                     this.afkEnabled = false;
                     this.stopAFK();
                     Logger.info("❌ AFK Mode: Disabled");
+                    this.discord.send("❌ **AFK Mode: DISABLED**");
                 } else {
                     Logger.error("Usage: !afk on/off");
                 }
@@ -356,6 +358,7 @@ export class Bot {
                     this.mcBot.setControlState('jump', true);
                     this.mcBot.setControlState('jump', false);
                     Logger.info("Bot Jumped! 🦘");
+                    this.discord.send("🦘 **Bot Jumped!**");
                 }
                 break;
 
@@ -363,6 +366,7 @@ export class Bot {
                 if (this.mcBot) {
                     this.mcBot.swingArm();
                     Logger.info("Bot Waved! 👋");
+                    this.discord.send("👋 **Bot Waved!**");
                 }
                 break;
 
@@ -371,6 +375,7 @@ export class Bot {
                     const yaw = this.mcBot.entity.yaw + Math.PI;
                     this.mcBot.look(yaw, 0);
                     Logger.info("Bot Spun! 🔄");
+                    this.discord.send("🔄 **Bot Spun!**");
                 }
                 break;
 
@@ -386,6 +391,7 @@ export class Bot {
                     const goal = new GoalNear(x, y, z, 1);
                     this.mcBot.pathfinder.setGoal(goal);
                     Logger.info(`Navigating to [${x}, ${y}, ${z}]... 📍`);
+                    this.discord.send(`📍 **Navigating to** \`[${x}, ${y}, ${z}]\`...`);
                 } else if (args.length === 2) {
                     // !botgo <player>
                     const targetName = args[1];
@@ -420,6 +426,7 @@ export class Bot {
                 this.mcBot.pathfinder.setGoal(moveGoal);
 
                 Logger.info(`Moving 3 blocks forward to [${Math.round(targetPos.x)}, ${Math.round(targetPos.z)}]... 🚶‍♂️`);
+                this.discord.send(`🚶‍♂️ **Moving Forward** (3 blocks)...`);
                 break;
 
             case 'pathfind':
@@ -440,6 +447,7 @@ export class Bot {
                 if (this.mcBot) {
                     this.mcBot.pathfinder.setGoal(null);
                     Logger.info("Pathfinding stopped! 🛑");
+                    this.discord.send("🛑 **Movement Stopped!**");
                 }
                 break;
 
@@ -548,6 +556,7 @@ export class Bot {
 
                     const type = reply.startsWith('/') ? "Command" : "Reply";
                     Logger.success(`Success! Saved ${type} for: "${trigger}"`);
+                    this.discord.send(`💾 **Saved ${type}**\nTrigger: \`${trigger}\`\nResponse: \`${reply}\``);
                 } else {
                     Logger.error("Format Error! Use: !setreply <trigger> and <reply/command>");
                     Logger.system("👉 Example: !setreply hello and /back");
