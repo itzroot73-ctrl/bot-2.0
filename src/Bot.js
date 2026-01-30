@@ -27,7 +27,7 @@ export class Bot {
             prompt: ''
         });
         Logger.setReadline(this.rl);
-        Logger.info("AFK 2.0 Module Loaded (Full v2.5 Stable) 🚀");
+        Logger.info("BANANA 3.0 Module Loaded (Ultra v3.1 Elite) 🍇");
     }
 
     async init() {
@@ -57,12 +57,13 @@ export class Bot {
         Logger.info(`Preparing connection... (Stealth Delay: ${delay}ms) ⏳`);
 
         setTimeout(() => {
-            Logger.info(`Connecting to ${this.config.host}:${this.config.port} as ${this.config.username}...`);
+            const botName = this.config.username === 'AFK_Bot' ? 'unify9' : this.config.username;
+            Logger.info(`Connecting to ${this.config.host}:${this.config.port} as ${botName}...`);
 
             const botOptions = {
                 host: this.config.host,
                 port: this.config.port,
-                username: this.config.username,
+                username: botName,
                 auth: this.config.auth || 'offline',
                 version: this.config.version || "1.20.1",
                 hideErrors: true, // Hide technical stack traces
@@ -171,7 +172,7 @@ export class Bot {
 
         this.mcBot.on('message', (jsonMsg) => {
             const msg = jsonMsg.toString();
-            
+
             // Check Auto-Replies (Works for Player & System messages)
             if (this.config.triggers) {
                 const normalizedMsg = msg.replace(/\s+/g, ' ').toLowerCase();
@@ -199,7 +200,7 @@ export class Bot {
         this.mcBot.on('messagestr', (message, position) => {
             if (position === 'game_info') return;
             if (chatCache.has(message)) return; // Already logged by 'chat'
-            
+
             // Log only unique/meaningful system messages
             Logger.chat('Server', message);
         });
@@ -484,23 +485,33 @@ export class Bot {
 
         this.afkInterval = setInterval(() => {
             if (!this.mcBot || !this.mcBot.entity) return;
-            const action = Math.floor(Math.random() * 3);
+            const action = Math.floor(Math.random() * 5); // Increased variety
             try {
                 switch (action) {
-                    case 0:
+                    case 0: // Sudden Jump
                         this.mcBot.setControlState('jump', true);
-                        setTimeout(() => this.mcBot.setControlState('jump', false), 500);
+                        setTimeout(() => this.mcBot.setControlState('jump', false), 400);
                         break;
-                    case 1:
+                    case 1: // Hand Swing
                         this.mcBot.swingArm();
                         break;
-                    case 2:
-                        const yaw = Math.random() * Math.PI - (Math.PI / 2);
-                        this.mcBot.look(yaw, 0);
+                    case 2: // Look Around (Yaw & Pitch)
+                        const yaw = (Math.random() * 360 - 180) * (Math.PI / 180);
+                        const pitch = (Math.random() * 90 - 45) * (Math.PI / 180);
+                        this.mcBot.look(yaw, pitch);
+                        break;
+                    case 3: // Sneak/Unsneak
+                        this.mcBot.setControlState('sneak', true);
+                        setTimeout(() => this.mcBot.setControlState('sneak', false), 1500);
+                        break;
+                    case 4: // Combined Jump & Swing
+                        this.mcBot.setControlState('jump', true);
+                        this.mcBot.swingArm();
+                        setTimeout(() => this.mcBot.setControlState('jump', false), 400);
                         break;
                 }
             } catch (e) { }
-        }, 5000);
+        }, 3000 + Math.random() * 4000); // Shorter, more varied interval
     }
 
     stopAFK() {
