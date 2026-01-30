@@ -12,7 +12,7 @@ export class Bot {
     constructor(config) {
         this.config = config;
         this.mcBot = null;
-        this.discord = new DiscordHandler(config);
+        this.discord = new DiscordHandler(config, this);
         this.afkInterval = null;
         this.afkEnabled = false;
         this.isBanned = false; // Detection for ban status

@@ -34,6 +34,25 @@ process.on('unhandledRejection', (reason) => {
 });
 
 
-// Start Bot directly
-const bot = new Bot(config);
-bot.init();
+// Setup startup Readline for interactive username
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+const startBot = (username) => {
+    if (username.trim()) {
+        config.username = username.trim();
+        Logger.info(`Using custom username: ${config.username}`);
+    } else {
+        Logger.info(`Using default username: ${config.username}`);
+    }
+    rl.close();
+    const bot = new Bot(config);
+    bot.init();
+};
+
+Logger.showBanner();
+rl.question(`👤 Enter Bot Username (Press [Enter] for ${config.username}): `, (answer) => {
+    startBot(answer);
+});
