@@ -349,12 +349,12 @@ export class Bot {
                 }
                 break;
 
-            case 'goto':
+            case 'botgo':
                 if (!this.mcBot) return;
                 this.stopAFK(); // Stop AFK movement during pathfinding
 
                 if (args.length === 4) {
-                    // !goto X Y Z
+                    // !botgo X Y Z
                     const x = parseFloat(args[1]);
                     const y = parseFloat(args[2]);
                     const z = parseFloat(args[3]);
@@ -362,7 +362,7 @@ export class Bot {
                     this.mcBot.pathfinder.setGoal(goal);
                     Logger.info(`Navigating to [${x}, ${y}, ${z}]... 📍`);
                 } else if (args.length === 2) {
-                    // !goto <player>
+                    // !botgo <player>
                     const targetName = args[1];
                     const target = this.mcBot.players[targetName]?.entity;
                     if (target) {
@@ -373,7 +373,7 @@ export class Bot {
                         Logger.error(`Player ${targetName} not found!`);
                     }
                 } else {
-                    Logger.error("Usage: !goto <x> <y> <z> OR !goto <player>");
+                    Logger.error("Usage: !botgo <x> <y> <z> OR !botgo <player>");
                 }
                 break;
 
@@ -526,7 +526,7 @@ export class Bot {
                     Logger.info("  !afk on/off        - Toggle AFK Mode");
                     Logger.info("  !jump, !wave       - Perform Actions");
                     Logger.info("  !spin              - Spin Around");
-                    Logger.info("  !goto X Y Z        - Move to Coords");
+                    Logger.info("  !botgo X Y Z       - Move to Coords");
                     Logger.info("  !stop              - Stop Movement");
                     Logger.info("  !uptime            - Show Bot Uptime");
                     Logger.info("  !setreply <T> and <R> - Add Auto-Reply/Command");
