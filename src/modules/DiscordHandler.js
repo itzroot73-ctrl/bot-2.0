@@ -48,11 +48,8 @@ export class DiscordHandler {
                 if (content.startsWith('!')) {
                     // Execute command
                     this.bot.handleCommand(content.slice(1), "Discord");
-                } else {
-                    // Chat
-                    this.bot.mcBot.chat(`[Discord] ${message.author.username}: ${content}`);
-                    Logger.discord(message.author.username, content);
                 }
+                // Regular chat messages are ignored (as requested) prevent loops/spam
             }
         });
 
