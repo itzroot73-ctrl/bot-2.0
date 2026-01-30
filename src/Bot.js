@@ -27,11 +27,10 @@ export class Bot {
             prompt: ''
         });
         Logger.setReadline(this.rl);
-        Logger.info("Blaze Bot Module Loaded (Full v2.5 Stable) 🚀");
+        Logger.info("AFK 2.0 Module Loaded (Full v2.5 Stable) 🚀");
     }
 
     async init() {
-        Logger.showBanner();
         await this.discord.init();
         this.connect();
         this.setupConsole();
@@ -53,8 +52,8 @@ export class Bot {
         this.isConnecting = true;
         if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
 
-        // Anti-Bot: Random delay before connecting (2-5 seconds)
-        const delay = Math.floor(Math.random() * 3000) + 2000;
+        // Anti-Bot: Random delay before connecting (1-2 seconds)
+        const delay = Math.floor(Math.random() * 1000) + 1000;
         Logger.info(`Preparing connection... (Stealth Delay: ${delay}ms) ⏳`);
 
         setTimeout(() => {
@@ -69,7 +68,8 @@ export class Bot {
                 hideErrors: true, // Hide technical stack traces
                 connectTimeout: 90000, // 90 seconds
                 checkTimeoutInterval: 90000,
-                brand: 'vanilla' // Spoof real client to bypass some Anti-Bots
+                brand: 'vanilla', // Spoof real client to bypass some Anti-Bots
+                viewDistance: 'tiny' // Optimization: Reduce world loading lag
             };
 
             this.mcBot = mineflayer.createBot(botOptions);
@@ -88,18 +88,21 @@ export class Bot {
     setupEvents() {
         this.mcBot.on('login', () => {
             this.isConnecting = false; // Done connecting
-            const msg = `🎮 Bot successfully joined as [ ${this.mcBot.username} ] ✅`;
-            Logger.success(msg);
-            Logger.system("Systems Online. Waiting for commands... 📡");
-
-            this.startAFK();
-            this.discord.send(`✅ **${this.mcBot.username} Joined the Server!** 🎮`);
+            Logger.info("Logged in! Waiting for spawn... ⏳");
         });
 
         this.mcBot.on('spawn', () => {
-            Logger.info("Bot Spawned! 🌍");
+            const pos = this.mcBot.entity.position;
+            const world = this.mcBot.world?.name || "Overworld";
+            Logger.success(`🎮 Bot ACTIVE: [ ${this.mcBot.username} ] joined ${world} ✅`);
+            Logger.info(`📍 Position: X:${Math.round(pos.x)} Y:${Math.round(pos.y)} Z:${Math.round(pos.z)}`);
+            Logger.system("Systems Online. Waiting for commands... 📡");
+
             const defaultMove = new Movements(this.mcBot);
             this.mcBot.pathfinder.setMovements(defaultMove);
+
+            if (!this.afkInterval) this.startAFK();
+            this.discord.send(`✅ **${this.mcBot.username} Joined the Server!** 🎮`);
         });
 
         this.mcBot.on('end', () => {
@@ -163,54 +166,41 @@ export class Bot {
             }
         });
 
-        const processedChats = new Set();
-        setInterval(() => processedChats.clear(), 500);
+        const chatCache = new Set();
+        setInterval(() => chatCache.clear(), 3000); // Clear every 3s to prevent memory bloat
 
         this.mcBot.on('message', (jsonMsg) => {
             const msg = jsonMsg.toString();
-            if (msg.includes('Chat disabled due to missing profile public key')) {
-                Logger.error("🚫 CHAT ERROR: Chat is disabled on this server! 🛑");
-                Logger.system("👉 Try turning OFF 'Enforce Secure Chat' in server settings.");
-                Logger.system("👉 Or, try setting auth to 'microsoft' in config.json");
-            }
-
+            
             // Check Auto-Replies (Works for Player & System messages)
             if (this.config.triggers) {
                 const normalizedMsg = msg.replace(/\s+/g, ' ').toLowerCase();
                 this.config.triggers.forEach(t => {
                     const normalizedTrigger = t.trigger.replace(/\s+/g, ' ').toLowerCase();
                     if (normalizedMsg.includes(normalizedTrigger)) {
-                        // Support multiple commands separated by &&
                         const replies = t.reply.split('&&');
                         replies.forEach((r, index) => {
                             setTimeout(() => {
-                                if (this.mcBot) {
-                                    const finalReply = r.trim();
-                                    this.mcBot.chat(finalReply);
-                                    if (finalReply.startsWith('/')) {
-                                        Logger.info(`自动化 - Running Command: ${finalReply} ⚙️`);
-                                    }
-                                }
-                            }, index * 500); // 500ms delay between commands to avoid spam kick
+                                if (this.mcBot) this.mcBot.chat(r.trim());
+                            }, index * 500);
                         });
                     }
                 });
             }
-            // Add message to processedChats for messagestr filtering
-            processedChats.add(msg);
         });
 
         this.mcBot.on('chat', (username, message) => {
             if (username === this.mcBot.username) return;
-            const fullMsg = `<${username}> ${message}`;
+            chatCache.add(message); // Mark as handled
             Logger.chat(username, message);
             this.discord.send(`💬 **${username}**: ${message}`);
         });
 
         this.mcBot.on('messagestr', (message, position) => {
             if (position === 'game_info') return;
-            if (processedChats.has(message)) return;
-            if ([...processedChats].some(pm => message.includes(pm) && pm.length > 5)) return;
+            if (chatCache.has(message)) return; // Already logged by 'chat'
+            
+            // Log only unique/meaningful system messages
             Logger.chat('Server', message);
         });
     }
