@@ -50,15 +50,14 @@ export class DiscordHandler {
                 if (content.startsWith('!')) {
                     // Execute command
                     this.bot.handleCommand(content.slice(1), "Discord");
-                } else if (content.startsWith('?')) {
-                    // Chat to Server (Remove ?)
-                    const chatMsg = content.slice(1).trim();
+                } else {
+                    // Chat to Server (Normal messages)
+                    const chatMsg = content.trim();
                     if (chatMsg.length > 0) {
                         this.bot.mcBot.chat(chatMsg);
-                        this.send(`💬 **Sent to Server**: ${chatMsg}`);
+                        this.send(`💬 **Sent**: ${chatMsg}`);
                     }
                 }
-                // Regular chat messages are ignored (as requested)
             }
         });
 
