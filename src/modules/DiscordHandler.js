@@ -23,14 +23,18 @@ export class DiscordHandler {
             ]
         });
 
-        this.client.once(Events.ClientReady, (c) => {
+        this.client.once(Events.ClientReady, async (c) => {
             Logger.success(`Discord Connected as ${c.user.tag}`);
-            this.channel = this.client.channels.cache.get(this.config.discord.channelId);
 
-            if (this.channel) {
-                this.channel.send('✅ **Minecraft Bot Online!** (AFK Mode: ON)');
-            } else {
-                Logger.error('Discord Channel ID not found!');
+            try {
+                this.channel = await this.client.channels.fetch(this.config.discord.channelId);
+                if (this.channel) {
+                    this.channel.send('✅ **Minecraft Bot Online!** (AFK Mode: ON) [v3.2]');
+                }
+            } catch (error) {
+                Logger.error(`Discord Channel Error: ${error.message}`);
+                Logger.system(`👉 Verify ID: ${this.config.discord.channelId}`);
+                Logger.system("👉 Tip: Enable Developer Mode in Discord -> Right Click Channel -> Copy ID");
             }
         });
 
