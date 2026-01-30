@@ -619,7 +619,14 @@ export class Bot {
                 break;
 
             case 'quit':
-                process.exit(0);
+                Logger.warning("Shutting down...");
+                this.discord.send(">>> 🔴 **SYSTEM OFFLINE**\n🛑 reason: **User Command**\n👋 Shutting down...");
+                if (this.mcBot) this.mcBot.quit();
+
+                // Allow time for Discord message to send
+                setTimeout(() => {
+                    process.exit(0);
+                }, 3000);
                 break;
 
             default:

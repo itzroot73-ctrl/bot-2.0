@@ -31,7 +31,7 @@ export class DiscordHandler {
             try {
                 this.channel = await this.client.channels.fetch(this.config.discord.channelId);
                 if (this.channel) {
-                    this.channel.send('✅ **Minecraft Bot Online!** (AFK Mode: ON) [v3.2]');
+                    this.channel.send('>>> 🟢 **SYSTEM ONLINE**\n🤖 Bot: **Active**\n🛡️ Version: **v3.2**\n📡 Waiting for commands...');
                 }
             } catch (error) {
                 Logger.error(`Discord Channel Error: ${error.message}`);
